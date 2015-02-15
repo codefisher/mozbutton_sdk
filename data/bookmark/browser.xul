@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="bookmark"
-	label="&bookmark.label;"
-	tooltiptext="&bookmark.tooltip;"
-	command="Browser:AddBookmarkAs"/>

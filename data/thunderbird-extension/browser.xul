@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="thunderbird-extension"
-	label="&thunderbird-extension.label;"
-	tooltiptext="&thunderbird-extension.tooltip;"
-	onclick="toolbar_buttons.OpenLinkFromPref('url.thunderbird-ext', event);" />

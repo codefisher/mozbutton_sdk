@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="reduce"
-	label="&reduce.label;"
-	tooltiptext="&reduce.tooltip;"
-	oncommand="window.goDoCommand('cmd_fullZoomReduce')"/>

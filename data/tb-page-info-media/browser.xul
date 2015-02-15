@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="tb-page-info-media"
-	label="&tb-page-info-media.label;"
-	tooltiptext="&tb-page-info-media.tooltip;"
-	oncommand="window.BrowserPageInfo(null, 'mediaTab');" />

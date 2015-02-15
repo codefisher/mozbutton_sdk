@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-send-referrer"
-	label="&tb-send-referrer.label;"
-	tooltiptext="&tb-send-referrer.tooltip;"
-	oncommand="toolbar_buttons.toggleSendReferrer(this);"/>

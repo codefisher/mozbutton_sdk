@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="tb-new-task"
-	label="&tb-new-task.label;"
-	tooltiptext="&tb-new-task.tooltip;"
-	observes="calendar_new_todo_command"
-	command="calendar_new_todo_command" />

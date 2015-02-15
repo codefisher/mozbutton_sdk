@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="find-prev"
-	label="&find-prev.label;"
-	tooltiptext="&find-prev.tooltip;"
-	oncommand="window.goDoCommand('cmd_findPrevious');" />

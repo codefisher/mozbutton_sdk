@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="label-blank"
-	label="&label-blank.label;"
-	tooltiptext="&label-blank.tooltip;"
-	oncommand="toolbar_buttons.renameTabBlank();"/>

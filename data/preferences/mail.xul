@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="preferences"
-	label="&preferences.label;"
-	tooltiptext="&preferences.tooltip;"
-	onclick="toolbar_buttons.openOptionsTab(event);"
-	command="menu_preferences"/>

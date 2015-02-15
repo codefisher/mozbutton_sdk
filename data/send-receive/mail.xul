@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="send-receive"
-	label="&send-receive.label;"
-	tooltiptext="&send-receive.tooltip;"
-	oncommand="window.goDoCommand('cmd_sendUnsentMsgs'); window.goDoCommand('cmd_getMsgsForAuthAccounts');"/>

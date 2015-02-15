@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="tb-toggle-headers"
-	label="&tb-toggle-headers.label;"
-	tooltiptext="&tb-toggle-headers.tooltip;"
-	onclick="toolbar_buttons.toggleMsgHeaders();" />

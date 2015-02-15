@@ -1,9 +1,0 @@
-links.caption:link.png
-<groupbox>
-	<caption label="&wikipedia.label;" />
-	<preferences>
-		<preference id="{{pref_root}}url.wikipedia" name="{{pref_root}}url.wikipedia"
-			type="unichar"/>
-	</preferences>
-	<textbox preference="{{pref_root}}url.wikipedia"/>
-</groupbox>

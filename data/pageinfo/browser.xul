@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="pageinfo"
-	label="&pageinfo.label;"
-	tooltiptext="&pageinfo.tooltip;"
-	key="key_viewInfo"
-	command="View:PageInfo"/>

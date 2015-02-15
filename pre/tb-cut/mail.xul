@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-cut"
-	label="&tb-cut.label;"
-	tooltiptext="&tb-cut.tooltip;"
-	key="key_cut"
-	command="cmd_cut"/>

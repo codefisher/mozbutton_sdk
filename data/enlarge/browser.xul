@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="enlarge"
-	label="&enlarge.label;"
-	tooltiptext="&enlarge.tooltip;"
-	key="key_fullZoomEnlarge"
-	command="cmd_fullZoomEnlarge" />

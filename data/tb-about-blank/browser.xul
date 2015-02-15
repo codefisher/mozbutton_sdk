@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="tb-about-blank"
-	label="&tb-about-blank.label;"
-	tooltiptext="&tb-about-blank.tooltip;"
-	onclick="toolbar_buttons.LoadURL('about:blank', event);" />

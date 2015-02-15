@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="tb-cookie-manager"
-	label="&tb-cookie-manager.label;"
-	tooltiptext="&tb-cookie-manager.tooltip;"
-	nclick="toolbar_buttons.openMessengerWindowOrTab('chrome://messenger/content/preferences/cookies.xul', event);" />

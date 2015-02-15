@@ -1,9 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="toolbar-menu"
-	label="&toolbar-menu.label;"
-	tooltiptext="&toolbar-menu.tooltip;"
-	type="menu"
-	onpopupshowing="window.onViewToolbarsPopupShowing(event, 'compose-toolbox');">
-	<menupopup id="toolbar-popup" oncommand="event.stopPropagation();" />
-</toolbarbutton>

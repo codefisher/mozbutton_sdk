@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-scratch-pad"
-	label="&tb-scratch-pad.label;"
-	tooltiptext="&tb-scratch-pad.tooltip;"
-	key="key_scratchpad"
-	oncommand="window.Scratchpad.openScratchpad();"/>

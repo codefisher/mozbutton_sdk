@@ -1,8 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="tab-list"
-	type="menu"
-	label="&tab-list.label;"
-	tooltiptext="&tab-list.tooltip;">
-		<menupopup onpopupshowing="toolbar_buttons.tabListDropDown(this);" oncommand="event.stopPropagation();" />
-</toolbarbutton>

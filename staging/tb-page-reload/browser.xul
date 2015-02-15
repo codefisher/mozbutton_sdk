@@ -1,8 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-page-reload"
-	label="&tb-page-reload.label;"
-	key="key_reload"
-	command="Browser:ReloadOrDuplicate"
-	onclick="window.checkForMiddleClick(this, event);"
-	tooltiptext="&tb-page-reload.tooltip;"/>

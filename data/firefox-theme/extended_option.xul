@@ -1,9 +1,0 @@
-links.caption:link.png
-<groupbox>
-	<caption label="&firefox-theme.label;" />
-	<preferences>
-		<preference id="{{pref_root}}url.firefox-theme" name="{{pref_root}}url.firefox-theme"
-			type="unichar"/>
-	</preferences>
-	<textbox preference="{{pref_root}}url.firefox-theme"/>
-</groupbox>

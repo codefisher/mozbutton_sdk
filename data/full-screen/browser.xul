@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="full-screen"
-	label="&full-screen.label;"
-	tooltiptext="&full-screen.tooltip;"
-	oncommand="toolbar_buttons.fullScreenMode();"/>

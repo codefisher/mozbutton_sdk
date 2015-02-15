@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="plainpaste"
-	label="&plainpaste.label;"
-	tooltiptext="&plainpaste.tooltip;"
-	command="cmd_pasteNoFormatting"/>

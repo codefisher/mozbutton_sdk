@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="bookmark-nopop"
-	label="&bookmark-nopop.label;"
-	tooltiptext="&bookmark-nopop.tooltip;"
-	oncommand="toolbar_buttons.bookmarkNoPopup();"/>

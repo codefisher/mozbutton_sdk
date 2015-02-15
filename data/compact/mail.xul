@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="compact"
-	label="&compact.label;"
-	tooltiptext="&compact.tooltip;"
-	oncommand="window.goDoCommand('cmd_compactFolder');"/>

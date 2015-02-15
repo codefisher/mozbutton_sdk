@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="delete-button"
-	label="&delete.label;"
-	tooltiptext="&delete.tooltip;"
-	key="key_delete"
-	command="cmd_delete"/>

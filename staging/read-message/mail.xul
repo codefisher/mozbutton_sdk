@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="read-message"
-	label="&read-message.label;"
-	tooltiptext="&read-message.tooltip;"
-	oncommand="window.MsgOpenNewWindowForMessage();"/>

@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="google"
-	label="&google.label;"
-	tooltiptext="&google.tooltip;"
-	onclick="toolbar_buttons.OpenLinkFromPref('url.google', event);" />

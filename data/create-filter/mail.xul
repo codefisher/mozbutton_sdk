@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="create-filter"
-	label="&create-filter.label;"
-	tooltiptext="&create-filter.tooltip;"
-	oncommand="window.goDoCommand('cmd_createFilterFromMenu');" />

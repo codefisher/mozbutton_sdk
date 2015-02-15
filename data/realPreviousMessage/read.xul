@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="realPreviousMessage"
-	label="&realPreviousMessage.label;"
-	tooltiptext="&realPreviousMessage.tooltip;"
-	oncommand="toolbar_buttons.realPreviousMessage(event);"/>

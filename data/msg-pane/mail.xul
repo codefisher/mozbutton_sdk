@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="msg-pane"
-	label="&msg-pane.label;"
-	tooltiptext="&msg-pane.tooltip;"
-	oncommand="window.MsgToggleMessagePane();"/>

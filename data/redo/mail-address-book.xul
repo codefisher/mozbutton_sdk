@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="redo"
-	label="&redo.label;"
-	tooltiptext="&redo.tooltip;"
-	key="key_redo"
-	command="cmd_redo" />

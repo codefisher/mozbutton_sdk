@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="attachments-detach"
-	label="&attachments-detach.label;"
-	tooltiptext="&attachments-detach.tooltip;"
-	oncommand="window.HandleAllAttachments('detach');" />

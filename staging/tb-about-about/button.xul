@@ -1,8 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="tb-about-about"
-	type="menu"
-	label="&tb-about-about.label;"
-	tooltiptext="&tb-about-about.tooltip;">
-		<menupopup onpopupshowing="toolbar_buttons.aboutAboutMenu(this);" oncommand="event.stopPropagation();" />
-</toolbarbutton>

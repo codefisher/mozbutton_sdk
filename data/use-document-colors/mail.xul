@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="use-document-colors"
-	label="&use-document-colors.label;"
-	tooltiptext="&use-document-colors.tooltip;"
-	oncommand="toolbar_buttons.toggleDocumentColors(this);" />

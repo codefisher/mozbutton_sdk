@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="attachments-save"
-	label="&attachments-save.label;"
-	tooltiptext="&attachments-save.tooltip;"
-	oncommand="window.HandleAllAttachments('save');" />

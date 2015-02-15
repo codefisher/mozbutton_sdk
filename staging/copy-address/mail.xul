@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="copy-address"
-	label="&copy-address.label;"
-	tooltiptext="&copy-address.tooltip;"
-	oncommand="toolbar_buttons.copyAddress()"/>

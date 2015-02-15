@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="accountmanager"
-	label="&accountmanager.label;"
-	tooltiptext="&accountmanager.tooltip;"
-	oncommand="window.MsgAccountManager(null);" />

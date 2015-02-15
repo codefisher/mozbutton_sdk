@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="websearch"
-	label="&websearch.label;"
-	tooltiptext="&websearch.tooltip;"
-	command="Tools:Search" />

@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="tb-toggle-menu-bar"
-	label="&tb-toggle-menu-bar.label;"
-	tooltiptext="&tb-toggle-menu-bar.tooltip;"
-	oncommand="toolbar_buttons.toggleToolbar(event,'toolbar-menubar', true);" />

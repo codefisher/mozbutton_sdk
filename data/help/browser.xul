@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="help"
-	label="&help.label;"
-	tooltiptext="&help.tooltip;"
-	oncommand="window.openHelpLink('firefox-help');"/>

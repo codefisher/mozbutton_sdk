@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-web-console"
-	label="&tb-web-console.label;"
-	tooltiptext="&tb-web-console.tooltip;"
-	key="key_webconsole"
-	oncommand="window.gDevToolsBrowser.selectToolCommand(window.gBrowser, 'webconsole');"/>

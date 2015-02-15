@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-style-editor"
-	label="&tb-style-editor.label;"
-	tooltiptext="&tb-style-editor.tooltip;"
-	key="key_styleeditor"
-	oncommand="window.gDevToolsBrowser.selectToolCommand(window.gBrowser, 'styleeditor');"/>

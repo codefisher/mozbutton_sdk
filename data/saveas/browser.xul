@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="saveas"
-	label="&saveas.label;"
-	tooltiptext="&saveas.tooltip;"
-	command="Browser:SavePage" />

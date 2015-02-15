@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="find"
-	label="&find.label;"
-	tooltiptext="&find.tooltip;"
-	oncommand="window.goDoCommand('cmd_find');"/>

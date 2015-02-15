@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="extensions"
-	label="&extensions.label;"
-	tooltiptext="&extensions.tooltip;"
-	oncommand="toolbar_buttons.OpenAddonsMgr('extensions', 'addons://list/extension');"/>

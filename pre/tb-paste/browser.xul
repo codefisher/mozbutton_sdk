@@ -1,8 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-paste"
-	label="&tb-paste.label;"
-	tooltiptext="&tb-paste.tooltip;"
-	key="key_paste"
-	oncommand="window.goDoCommand('cmd_paste');"
-	command="cmd_paste"/>

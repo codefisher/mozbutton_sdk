@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="use-document-fonts"
-	label="&use-document-fonts.label;"
-	tooltiptext="&use-document-fonts.tooltip;"
-	oncommand="toolbar_buttons.toggleDocumentFonts(this);" />

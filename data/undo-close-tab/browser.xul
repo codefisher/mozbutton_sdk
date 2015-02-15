@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="undo-close-tab"
-	label="&undo-close-tab.label;"
-	tooltiptext="&undo-close-tab.tooltip;"
-	command="History:UndoCloseTab" />

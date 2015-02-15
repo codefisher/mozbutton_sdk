@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="inspecter"
-	key="key_inspectPage"
-	label="&inspecter.label;"
-	tooltiptext="&inspecter.tooltip;"
-	oncommand="toolbar_buttons.openDomInspector(event, document);" />

@@ -1,9 +1,0 @@
-links.caption:link.png
-<groupbox>
-	<caption label="&firefox-extension.label;" />
-	<preferences>
-		<preference id="{{pref_root}}url.firefox-ext" name="{{pref_root}}url.firefox-ext"
-			type="unichar"/>
-	</preferences>
-	<textbox preference="{{pref_root}}url.firefox-ext"/>
-</groupbox>

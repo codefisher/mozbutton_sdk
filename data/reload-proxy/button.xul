@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="reload-proxy"
-	label="&reload-proxy.label;"
-	tooltiptext="&reload-proxy.tooltip;"
-	onclick="toolbar_buttons.reloadPAC();" />

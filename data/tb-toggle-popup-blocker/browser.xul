@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="tb-toggle-popup-blocker"
-	label="&tb-toggle-popup-blocker.label;"
-	tooltiptext="&tb-toggle-popup-blocker.tooltip;"
-	onclick="toolbar_buttons.viewPopupExceptions(event);"
-	oncommand="toolbar_buttons.togglePopUp();"/>

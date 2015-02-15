@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="rename-tab"
-	label="&rename-tab.label;"
-	tooltiptext="&rename-tab.tooltip;"
-	oncommand="toolbar_buttons.renameTab();" />

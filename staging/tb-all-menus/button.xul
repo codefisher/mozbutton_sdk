@@ -1,8 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-    id="tb-all-menus"
-	type="menu"
-    label="&tb-all-menus.label;"
-    tooltiptext="&tb-all-menus.tooltip;">
-		<menupopup onpopupshowing="toolbar_buttons.loadAllMenusMenu(this);" oncommand="event.stopPropagation();" />
-</toolbarbutton>

@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="thunderbird-theme"
-	label="&thunderbird-theme.label;"
-	tooltiptext="&thunderbird-theme.tooltip;"
-	oncommand="toolbar_buttons.OpenMailLink('url.thunderbird-theme');" />

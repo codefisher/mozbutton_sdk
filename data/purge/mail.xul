@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="purge"
-	label="&purge.label;"
-	tooltiptext="&purge.tooltip;"
-	oncommand="window.goDoCommand('cmd_deleteJunk'); /* what about trash? */ window.goDoCommand('cmd_compactFolder');"/>

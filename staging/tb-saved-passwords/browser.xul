@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-    id="tb-saved-passwords"
-    label="&tb-saved-passwords.label;"
-    tooltiptext="&tb-saved-passwords.tooltip;"
-	oncommand="toolbar_buttons.viewPasswords();"
-	onclick="toolbar_buttons.openPasswordsTab(event);" />

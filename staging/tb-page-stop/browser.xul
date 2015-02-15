@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-page-stop"
-	label="&tb-page-stop.label;"
-	command="Browser:Stop"
-	tooltiptext="&tb-page-stop.tooltip;"/>

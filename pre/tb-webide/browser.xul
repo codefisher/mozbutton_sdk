@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-webide"
-	label="&tb-webide.label;"
-	tooltiptext="&tb-webide.tooltip;"
-	key="key_webide"
-	oncommand="window.gDevToolsBrowser.openWebIDE();"/>

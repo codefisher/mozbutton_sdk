@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="workoffline"
-	label="&workoffline.label;"
-	tooltiptext="&workoffline.tooltip;"
-	command="goOfflineMenuItem"/>

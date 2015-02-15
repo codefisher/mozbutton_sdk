@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="toggle-read"
-	label="&toggle-read.label;"
-	tooltiptext="&toggle-read.tooltip;"
-	oncommand="window.goDoCommand('cmd_markAsRead');" />

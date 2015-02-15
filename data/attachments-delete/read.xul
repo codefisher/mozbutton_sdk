@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="attachments-delete"
-	label="&attachments-delete.label;"
-	tooltiptext="&attachments-delete.tooltip;"
-	oncommand="window.HandleAllAttachments('delete');" />

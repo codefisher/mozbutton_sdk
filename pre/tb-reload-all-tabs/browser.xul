@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-reload-all-tabs"
-	label="&tb-reload-all-tabs.label;"
-	tooltiptext="&tb-reload-all-tabs.tooltip;"
-	oncommand="window.gBrowser.reloadAllTabs();"/>

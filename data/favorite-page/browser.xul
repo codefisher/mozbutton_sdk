@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="favorite-page"
-	label="&favorite-page.label;"
-	tooltiptext="&favorite-page.tooltip;"
-	onclick="toolbar_buttons.OpenLinkPref('url.favorite',event);" />

@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional" 
-	id="tb-print-page"
-	label="&tb-print-page.label;"
-	tooltiptext="&tb-print-page.tooltip;"
-	command="cmd_print" />

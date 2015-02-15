@@ -1,7 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="exit"
-	label="&exit.label;"
-	tooltiptext="&exit.tooltip;"
-	key="key_quitApplication"
-	command="cmd_quitApplication" />

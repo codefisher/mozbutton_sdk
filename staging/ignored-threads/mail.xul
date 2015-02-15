@@ -1,6 +1,0 @@
-<toolbarbutton
-	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="ignored-threads"
-	label="&ignored-threads.label;"
-	tooltiptext="&ignored-threads.tooltip;"
-	oncommand="window.goDoCommand('cmd_viewIgnoredThreads');" />
