@@ -14,10 +14,8 @@ config_default = {
 
     # makes the build system run with debuging enabled
     "debug": False,
-    # if true buttons in the staging folder are also added
-    "use_data": True,
-    "use_staging": False,
-    "use_pre": False,
+    # which folders to load button data from
+    "projects": (),
     # all the image files are put into a bit map if enabled
     "merge_images": False,
     # should a page be shown when the extension is installed

@@ -138,8 +138,7 @@ def create_custombutton(settings, window):
         "custom_button_mode": True,
         "show_updated_prompt": False,
         "add_to_main_toolbar": False,
-        "use_staging": True,
-        "use_pre": True,
+        "projects": ("data", "staging", "pre"),
     })
     locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
     button_locales = Locale(settings, locale_folders, locales, all_files=True)
