@@ -1,11 +1,26 @@
 import os
+import json
+import codecs
 
 try:
     import svn.local
 except ImportError:
     pass
 
-def get_reveision(settings):
+def apply_settings_files(settings, file_names):
+    for file_name in file_names:
+        if not settings.get("project_root"):
+            settings["project_root"] = os.path.abspath(os.path.join(os.path.dirname(file_name)))
+        try:
+            with codecs.open(file_name) as fp:
+                try:
+                    settings.update(json.load(fp))
+                except ValueError:
+                    raise ValueError("Failed to parse settings file: %s" % file_name)
+        except IOError:
+            raise IOError("Failed to open settings file: %s" % file_name)
+
+def get_revision(settings):
     r = svn.local.LocalClient(settings.get("project_root"))
     return r.info().get("commit#revision")
 

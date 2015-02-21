@@ -102,10 +102,10 @@ def build_extension(settings, output=None, project_root=None):
             if locale in locales_inuse:
                 xpi.writestr(os.path.join("chrome", "locale", locale, "%sbutton.properties" % locale_prefix), bytes_string(data))
     for name, path in buttons.get_extra_files().iteritems():
-        with open(path) as fp:
+        with codecs.open(path, encoding='utf-8') as fp:
             xpi.writestr(os.path.join("chrome", "content", "files", name), 
-                         fp.read().replace("{{chrome-name}}", settings.get("chrome_name"))
-                            .replace("{{locale_file_prefix}}", settings.get("locale_file_prefix")))
+                         bytes_string(fp.read().replace("{{chrome-name}}", settings.get("chrome_name"))
+                            .replace("{{locale_file_prefix}}", settings.get("locale_file_prefix"))))
     resources = buttons.get_resource_files()
     has_resources = bool(resources)
     for name, path in resources.iteritems():
@@ -173,7 +173,7 @@ def build_extension(settings, output=None, project_root=None):
             data = xpi_fp.read()
             for folder in settings.get("profile_folder"):
                 try:
-                    with open(os.path.join(folder, settings.get("output_folder"),
+                    with open(os.path.join(folder, "extensions",
                         settings.get("extension_id") + ".xpi"), "w") as fp:
                         fp.write(data)
                 except IOError:
@@ -210,7 +210,7 @@ def create_bootstrap(settings, buttons, has_resources):
 
 def create_manifest(settings, locales, buttons, has_resources, options=[]):
     lines = []
-    values = {"chrome": settings.get("chrome_name"), "jar": settings.get("jar_file")}
+    values = {"chrome": settings.get("chrome_name")}
 
     lines.append("content\t%(chrome)s\tchrome/content/" % values)
     lines.append("skin\t%(chrome)s\tclassic/1.0\t"

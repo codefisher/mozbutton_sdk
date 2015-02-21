@@ -1,26 +1,24 @@
 import os
 
-config_default = {
+config = {
     # Meta data the belongs to the extension
-    "name": "Toolbar Buttons",
-    "creator": "Michael Buckley",
-    "description": "Adds toolbar buttons to the customize toolbar window in several programs including Firefox, Thunderbird and SeaMonkey.  Some of the buttons make commonly preformed actions quicker, others add new functionality.",
-    "version": "1.0.4b1",
-    "extension_id": "{03B08592-E5B4-45ff-A0BE-C1D975458688}",
-    "homepage": "https://codefisher.org/toolbar_button/",
-    "icon": os.path.join("files", "button.png"),
-    "license": "LICENSE",
+    "name": "",
+    "creator": "",
+    "description": "",
+    "version": "",
+    "extension_id": "",
+    "homepage": "",
+    "icon": "",
+    "license": "",
     "update_url": None,
 
-    # makes the build system run with debuging enabled
-    "debug": False,
     # which folders to load button data from
     "projects": (),
     # all the image files are put into a bit map if enabled
     "merge_images": False,
     # should a page be shown when the extension is installed
-    "show_updated_prompt": True,
-    "version_url": "https://codefisher.org/toolbar_button/version/",
+    "show_updated_prompt": False,
+    "version_url": "",
     "current_version_pref": "current.version",
 
     # sets what is added to the extension, this is either a comer seperated
@@ -34,9 +32,8 @@ config_default = {
     "exclude_buttons": None,
 
     # these settings change the internals of the extension
-    "pref_root": "extension.tbutton.",
-    "jar_file": "tbutton.jar",
-    "chrome_name": "toolbar-buttons",
+    "pref_root": "",
+    "chrome_name": "",
     "icon_size": ("16", "24"),
     "image_path": None,
     "include_icons_for_custom_window": False,
@@ -57,7 +54,7 @@ config_default = {
     "add_to_main_toolbar": None,
     # if a menu should be added with all the buttons that can be changed into menu items
     "create_menu": False,
-    "menu_meta": ("toolbar-buttons-menu", "tb-toolbar-buttons.menu"),
+    "menu_meta": None,
     "default_show_menu_pref": "true",
     # where the menu should be placed
     "as_submenu": True,
@@ -226,15 +223,3 @@ config_default = {
         "lightning": ("mail", "messenger")
     }
 }
-
-config = dict(config_default)
-configs = {}
-
-try:
-    from local_settings import configs as local_config
-    config.update(local_config.get('default'))
-    for name, a_config in local_config.items():
-        configs[name] = dict(config_default)
-        configs[name].update(a_config)
-except ImportError:
-    pass

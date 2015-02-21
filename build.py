@@ -7,6 +7,7 @@ import time
 
 from builder.build import build_extension
 from builder.screenshot import create_screenshot
+from builder.util import apply_settings_files
 
 try:
     from config import settings
@@ -15,7 +16,7 @@ except ImportError:
     sys.exit(1)
 
 def main():
-    opts, args = getopt.getopt(sys.argv[1:], "b:l:a:o:f:s:m:", ["config=", "help", "debug", "screen-shot", "icons-per-row=", "screen-shot-font="])
+    opts, args = getopt.getopt(sys.argv[1:], "b:l:a:o:f:s:m:", ["help", "profile", "screen-shot", "icons-per-row=", "screen-shot-font="])
     opts_table = dict(opts)
     if "--help" in opts_table:
         print textwrap.dedent("""
@@ -36,10 +37,8 @@ def main():
             --screen-shot-font    - the file to the font to use for the window title
         """).strip()
         return
-    if "--config" in opts_table:
-        config = dict(settings.configs.get(opts_table["--config"]))
-    else:
-        config = dict(settings.config)
+    config = dict(settings.config)
+    apply_settings_files(config, args)
     for name, setting in (("-b", "buttons"), ("-l", "locale"), ("-a", "applications")):
         if name in opts_table:
             config[setting] = [value for arg, value in opts if arg == name]
@@ -59,11 +58,11 @@ def main():
             config["screen_shot_font"] = opts_table["--screen-shot-font"]
         create_screenshot(config)
         return
-    elif config.get("debug", False) or "--debug" in opts_table:
+    elif "--profile" in opts_table:
         import cProfile
         import pstats
         cProfile.runctx("build_extension(settings)",
-                    {"build_extension": build_extension, "settings": settings.config}, {},
+                    {"build_extension": build_extension, "settings": config}, {},
                     "./stats")
         prof = pstats.Stats("./stats")
         prof.sort_stats('cumulative') # time, cumulative

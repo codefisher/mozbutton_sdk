@@ -316,7 +316,7 @@ class Button(SimpleButton):
         if self._settings.get("create_menu"):
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "showmenu-option.xul"), "r") as menu_option_file:
                 menu_option_tempate = menu_option_file.read() 
-            if self._settings.get("as_submenu"):
+            if self._settings.get("as_submenu") and self._settings.get("menu_meta"):
                 menu_id, menu_label = self._settings.get("menu_meta")
                 self._button_options[menu_id] = ("tb-show-a-menu.option.title:menu.png", 
                         menu_option_tempate.replace("{{menu_id}}", menu_id).replace("{{menu_label}}", menu_label))
@@ -426,7 +426,7 @@ class Button(SimpleButton):
         if self._settings.get("show_updated_prompt") or self._settings.get("add_to_main_toolbar"):
             settings.append(("%s%s" % (self._settings.get("pref_root"), self._settings.get("current_version_pref")), "''"))
         if self._settings.get("create_menu"):
-            if self._settings.get("as_submenu"):
+            if self._settings.get("as_submenu") and self._settings.get("menu_meta"):
                 menu_id, menu_label = self._settings.get("menu_meta")
                 settings.append(("%sshowamenu.%s" % (self._settings.get("pref_root"), menu_id), self._settings.get("default_show_menu_pref")))
             else:
@@ -841,14 +841,14 @@ class Button(SimpleButton):
                 data.append("<menuitem %s/>" % "\n\t\t".join(attrs))
         if not data:
             return ""
-        if as_submenu:
+        if as_submenu and self._settings.get("menu_meta"):
             menu_id, menu_label = self._settings.get("menu_meta")
             return """\n<menupopup id="%s"><menu insertafter="%s" id="%s" label="&%s;">\n\t<menupopup sortable="true" onpopupshowing="toolbar_buttons.sortMenu(event, this); toolbar_buttons.handelMenuLoaders(event, this);" id="toolbar-buttons-popup">\n\t\t%s\n\t</menupopup>\n\t</menu></menupopup>\n""" % (menu_name, insert_after, menu_id, menu_label, "\n\t".join(data))
         return """\n<menupopup id="%s">\n\t%s\n</menupopup>\n""" % (menu_name, "\n\t".join(data))
 
     def _jsm_create_menu(self, file_name, buttons):
         menu = self._create_menu(file_name, buttons)
-        if menu:
+        if menu and self._settings.get("menu_meta"):
             menu_id, menu_label = self._settings.get("menu_meta")
             statements, count = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', menu)), doc="document")
             menu_name, insert_after = self._settings.get("file_to_menu").get(file_name)
@@ -1027,7 +1027,10 @@ class Button(SimpleButton):
                     jsm_file.append(self._create_dom_button(button_id, re.sub(r'&([^;]+);', r'\1', xul), file_name, count, toolbar_ids))
                 count += 1
             modules_import = "\n" + "\n".join("try { Cu.import('%s'); } catch(e) {}" % mod for mod in modules if mod)
-            menu_id, menu_label = self._settings.get("menu_meta")
+            if self._settings.get("menu_meta"):
+                menu_id, menu_label = self._settings.get("menu_meta")
+            else:
+                menu_id, menu_label = "", ""
             end = []
             menu = self._jsm_create_menu(file_name, values)
             for js_file in set(self._get_js_file_list(file_name) + [file_name]):
@@ -1139,7 +1142,7 @@ class Button(SimpleButton):
         Precondition: get_js_files() has been called
         """
         button_hash, toolbar_template = self._get_toolbar_info()
-        with open(os.path.join(self._settings.get("project_root"), 'files', 'button.xul')) as template_file:
+        with open(os.path.join(self._settings.get("button_sdk_root"), 'templates', 'button.xul')) as template_file:
             template = template_file.read()
         result = {}
         for file_name, values in self._button_xul.iteritems():

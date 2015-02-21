@@ -62,5 +62,5 @@ def create_screenshot(settings):
         icon_img = Image.open(button.get_image(settings, settings.get("icon_size")[0], icon))
         image.paste(icon_img, (4 + (i % icons_per_row) * (icons_size + 8), (i // icons_per_row * toolbar_height)+top_height+(toolbar_height-icons_size)/2), icon_img)
 
-    file_name = os.path.join(settings.get("output_folder"), settings.get("output_file", "%s.png" % "".join(settings.get("applications"))))
+    file_name = os.path.join(settings.get("project_root"), settings.get("output_folder"), settings.get("output_file", "%s.png" % "".join(settings.get("applications"))))
     image.save(file_name, "png")
