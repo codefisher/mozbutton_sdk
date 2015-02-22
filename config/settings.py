@@ -89,6 +89,9 @@ config = {
     
     # set when trying to create buttons for the custombuttons extension
     "custom_button_mode": False,
+    
+    # this is a prefix that is auto added to button when using the start button script
+    "new_button_prefix": "",
 
     # the below sets application support
     "applications_data": {
