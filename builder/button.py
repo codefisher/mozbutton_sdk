@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import io # we might not need this as much now, that PIL as .tobytes()
 import math
 import hashlib
@@ -1041,8 +1042,8 @@ class Button(SimpleButton):
             result[file_name] = (template.replace('{{locale-file-prefix}}', self._settings.get("locale_file_prefix"))
                         .replace('{{modules}}', modules_import)
                         .replace('{{scripts}}', "\n\t".join(js_includes))
-                        .replace('{{button_ids}}', str(values.keys())) # we use this not self._buttons, because of the possible generated toolbar toggle buttons
-                        .replace('{{toolbar_ids}}', str(toolbar_ids))
+                        .replace('{{button_ids}}', json.dumps(values.keys())) # we use this not self._buttons, because of the possible generated toolbar toggle buttons
+                        .replace('{{toolbar_ids}}', json.dumps(toolbar_ids))
                         .replace('{{toolbars}}', toolbars)
                         .replace('{{menu_id}}', menu_id)
                         .replace('{{toolbox}}', self._settings.get("file_to_toolbar_box").get(file_name, ('', ''))[1])
