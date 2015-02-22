@@ -52,8 +52,6 @@ def build_extension(settings, output=None, project_root=None):
     if os.path.join(settings.get("image_path")) is None:
         print "Please set the image_path setting"
         return
-    if settings.get("lookup_max_versions"):
-        apply_max_version(settings)
     locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
     button_locales = Locale(settings, locale_folders, locales, all_files=True)
     #options_locales = button_locales #Locale(settings, locale_folders, locales, all_files=True)

@@ -87,10 +87,6 @@ config = {
     # parts of the extension are copied here, if set
     "profile_folder": None,
     
-    # the latest max version for support applications can be lookup
-    # and changed to what ever values are found.
-    "lookup_max_versions": False,
-    
     # set when trying to create buttons for the custombuttons extension
     "custom_button_mode": False,
 

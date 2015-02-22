@@ -1,9 +1,15 @@
 import os
 import json
 import codecs
+import itertools
 
 try:
     import svn.local
+except ImportError:
+    pass
+
+try:
+    from git import Repo
 except ImportError:
     pass
 
@@ -20,9 +26,13 @@ def apply_settings_files(settings, file_names):
         except IOError:
             raise IOError("Failed to open settings file: %s" % file_name)
 
-def get_revision(settings):
-    r = svn.local.LocalClient(settings.get("project_root"))
-    return r.info().get("commit#revision")
+def get_svn_revision(settings):
+    repo = svn.local.LocalClient(settings.get("project_root"))
+    return repo.info().get("commit#revision")
+
+def get_git_revision(settings):
+    repo = Repo(settings.get("project_root"))
+    return repo.head.commit.count()
 
 def get_button_folders(limit, settings, data_folder="data"):
     return get_folders(limit, settings, data_folder)
@@ -52,3 +62,37 @@ def get_folders(limit, settings, folder):
         limits = [item[1:] for item in limit if item[0] == "-"]
         folders = list(folder for folder in folders if folder not in limits)
     return [os.path.join(folder, sub_folder) for sub_folder in folders], folders
+
+def create_update_rdf(config):
+    xml = """<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+    <rdf:Description
+        rdf:about="urn:mozilla:extension:%s">
+        <em:updates>
+            <rdf:Seq>
+                <rdf:li>
+                    <rdf:Description>
+                        <em:version>%s</em:version>
+                        %s
+                    </rdf:Description>
+                </rdf:li>
+            </rdf:Seq>
+        </em:updates>
+    </rdf:Description>
+    </rdf:RDF>"""
+    
+    update_xml = """<!--  %%s -->
+                        <em:targetApplication>
+                            <rdf:Description>
+                                <em:id>%%s</em:id>
+                                <em:minVersion>%%s</em:minVersion>
+                                <em:maxVersion>%%s</em:maxVersion>
+                                <em:updateLink>%s</em:updateLink>
+                            </rdf:Description>
+                        </em:targetApplication>""" % config.get("update_file")
+                        
+    updates = []
+    for data in itertools.chain(*config.get("applications_data").values()):
+        updates.append(update_xml % tuple(data))
+    return xml % (config.get("extension_id"), config.get("version"), "\n".join(updates))
