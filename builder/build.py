@@ -48,12 +48,15 @@ def get_buttons(settings, cls=Button):
     buttons = cls(button_folders, button_names, settings, applications)
     return buttons
 
-def build_extension(settings, output=None, project_root=None):
+def build_extension(settings, output=None, project_root=None, button_locales=None):
     if os.path.join(settings.get("image_path")) is None:
         print "Please set the image_path setting"
         return
-    locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
-    button_locales = Locale(settings, locale_folders, locales, all_files=True)
+    if button_locales is None:
+        locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
+        button_locales = Locale(settings, locale_folders, locales, all_files=True)
+    else:
+        locales = button_locales.get_locales()
     #options_locales = button_locales #Locale(settings, locale_folders, locales, all_files=True)
     buttons = get_buttons(settings)
     
