@@ -179,7 +179,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
                         fp.write(data)
                 except IOError:
                     print("Failed to write extension to profile folder")
-    return buttons, button_locales
+    return buttons
 
 def create_bootstrap(settings, buttons, has_resources):
     chrome_name = settings.get("chrome_name")
