@@ -131,7 +131,7 @@ class CButton(Button):
         xml = bytes_string(CUSTOM_XUL % data)
         return "custombutton://%s" % urllib.quote(xml)
 
-def create_custombutton(settings, window):
+def create_custombutton(settings, window, button_locales=None):
     settings.update({
         "include_toolbars": False,
         "create_menu": False,
@@ -140,18 +140,19 @@ def create_custombutton(settings, window):
         "add_to_main_toolbar": False,
         "projects": ("data", "staging", "pre"),
     })
-    locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
-    button_locales = Locale(settings, locale_folders, locales, all_files=True)
+    if not button_locales:
+        locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
+        button_locales = Locale(settings, locale_folders, locales, all_files=True)
     buttons = get_buttons(settings, CButton)
     buttons.set_local(button_locales)
     return buttons.create_custombuttons(window)
     
-def custombutton(config, application, window, locale, button):
+def custombutton(config, application, window, locale, button, button_locales=None):
     settings = dict(config)
     settings["applications"] = [application]
     settings["locale"] = [locale]
     settings["buttons"] = [button]
-    return create_custombutton(settings, window)
+    return create_custombutton(settings, window, button_locales)
     
 if __name__ == "__main__":
     from os import sys, path
