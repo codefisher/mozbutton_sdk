@@ -177,9 +177,13 @@ class SimpleButton():
                 with open(self._xul_files[button_id][0]) as fp:
                     data = fp.read()
                     match = re.search(regexp, data)
-                    value = button_locale.get_dtd_value(locale_name, match.group(1), self)
+                    if match:
+                        string_name = match.group(1)
+                    else:
+                        string_name = "%s.%s" % (button_id, str_type)
+                    value = button_locale.get_dtd_value(locale_name, string_name, self)
                 if value is None:
-                    value = button_locale.get_dtd_value(default_locale, match.group(1), self)
+                    value = button_locale.get_dtd_value(default_locale, string_name, self)
             if value is None:
                 return u'' #print button_id
             return unicode(value.replace("&brandShortName;", "").replace("&apos;", "'"))
