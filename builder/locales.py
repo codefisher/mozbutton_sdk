@@ -10,15 +10,29 @@ entity_re = re.compile(r"<!ENTITY\s+([\w\-\.]+?)\s+[\"'](.*?)[\"']\s*>")
 
 class Locale(object):
     """Parses the localisation files of the extension and queries it for data"""
-    def __init__(self, settings, folders, locales, options=False, load_properites=True, only_meta=False, all_files=False):
+    def __init__(self, settings, folders=None, locales=None, options=False, 
+                 load_properites=True, only_meta=False, all_files=False,
+                 local_obj=None):
         self._settings = settings
-        self._missing_strings = settings.get("missing_strings")
-        self._folders = folders
-        self._locales = locales
-        self._dtd = defaultdict(dict)
-        self._properties = defaultdict(dict)
-        self._meta = {}
-        self._search_data = {}
+        if local_obj:
+            self._missing_strings = local_obj._missing_strings
+            self._folders = local_obj._folders
+            self._locales = local_obj._locales
+            self._dtd = local_obj._dtd
+            self._properties = local_obj._properties
+            self._meta = local_obj._meta
+            self._search_data = local_obj._search_data
+            return
+        elif folders and locales:
+            self._missing_strings = settings.get("missing_strings")
+            self._folders = folders
+            self._locales = locales
+            self._dtd = defaultdict(dict)
+            self._properties = defaultdict(dict)
+            self._meta = {}
+            self._search_data = {}
+        else:
+            raise ValueError("Not able to make Locale")
         
         if self._missing_strings == "search":
             with open(os.path.join(settings.get('project_root'), 'app_locale', 'strings')) as string_data:

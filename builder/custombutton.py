@@ -143,6 +143,8 @@ def create_custombutton(settings, window, button_locales=None):
     if not button_locales:
         locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
         button_locales = Locale(settings, locale_folders, locales, all_files=True)
+    else:
+        button_locales = Locale(settings, local_obj=button_locales)
     buttons = get_buttons(settings, CButton)
     buttons.set_local(button_locales)
     return buttons.create_custombuttons(window)

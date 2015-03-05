@@ -56,8 +56,8 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
         locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
         button_locales = Locale(settings, locale_folders, locales, all_files=True)
     else:
+        button_locales = Locale(settings, local_obj=button_locales)
         locales = button_locales.get_locales()
-    #options_locales = button_locales #Locale(settings, locale_folders, locales, all_files=True)
     buttons = get_buttons(settings)
     
     xpi_file_name = os.path.join(settings.get("project_root"), settings.get("output_folder"), settings.get("output_file", "toolbar_buttons.xpi") % settings)
