@@ -651,7 +651,7 @@ class Button(SimpleButton):
         externals = dict((name, function) for function, name
                          in function_name_match.findall(shared_functions))
         if self._settings.get("include_toolbars"):
-            js_imports.add("toggleToolbarButtonToolbar")
+            js_imports.add("toggleToolbar")
         extra_functions = []
         js_imports.update(js_includes)
         loop_imports = js_imports
