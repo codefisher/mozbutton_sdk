@@ -1,4 +1,3 @@
-#!/usr/bin/python
 import getopt
 import sys
 import textwrap
