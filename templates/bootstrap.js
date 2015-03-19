@@ -80,7 +80,9 @@ function createResource(resourceName, uriPath) {
 
 function startup(data, reason) {
 	// set our default prefs
-	Services.scriptloader.loadSubScript("chrome://{{chrome-name}}/content/defaultprefs.js", {pref: setDefaultPref});
+	try {
+		Services.scriptloader.loadSubScript("chrome://{{chrome-name}}/content/defaultprefs.js", {pref: setDefaultPref});
+	} catch(e) {}
 	
 	{{resource}}
 
