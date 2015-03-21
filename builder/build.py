@@ -141,15 +141,18 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     if settings.get("fix_meta"):
         locale_str = buttons.locale_string(button_locale=button_locales, locale_name=locales[0] if len(locales) == 1 else None)
         labels = sorted([locale_str("label", button) for button in buttons.buttons()], key=unicode.lower)
-        settings["description"] = "A customized version of Toolbar Buttons including the buttons: %s" % ", ".join(labels)
-
-    if settings.get("fix_meta") and len(buttons) == 1:
-        button = buttons.buttons()[0]
-        settings["name"] = "%s Button" % labels[0]
-        settings["description"] = buttons.get_description(button)
-        xpi.write(get_image(settings, "32", buttons.get_icons(button)), "icon.png")
+        if len(buttons) == 1:
+            button = buttons.buttons()[0]
+            settings["name"] = "%s Button" % labels[0]
+            settings["description"] = buttons.get_description(button)
+            if not settings.get("icon"):
+                settings["icon"] = buttons.get_icons(button)
+        else:
+            settings["description"] = "A customized version of Toolbar Buttons including the buttons: %s" % ", ".join(labels)
+    if settings.get("icon"):
+        xpi.write(get_image(settings, "32", settings.get("icon")), "icon.png")
     else:
-        xpi.write(os.path.join(settings.get("project_root"), settings.get("icon")), "icon.png")
+        xpi.write(os.path.join(settings.get("project_root"), "files", "icon.png"), "icon.png")
     xpi.writestr("chrome.manifest", create_manifest(settings, locales, buttons, has_resources, option_applicaions))
     xpi.writestr("install.rdf", create_install(settings, buttons.get_suported_applications(), option_applicaions))
     if settings.get('restartless'):
