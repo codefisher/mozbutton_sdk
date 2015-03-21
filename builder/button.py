@@ -481,6 +481,8 @@ class Button(SimpleButton):
             for size in icon_size_set:
                 if size is not None:
                     y, x = int(math.ceil(image_count*int(size) / 1000.0)), (1000 / int(size))
+                    if y == 1:
+                        x = image_count
                     image_map_x[size] = x
                     image_map_size[size] = Image.new("RGBA", (x * int(size), y * int(size)), (0, 0, 0, 0))
         count = 0
