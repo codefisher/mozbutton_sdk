@@ -935,7 +935,7 @@ class Button(SimpleButton):
             else:
                 statements.append('%s_%s.setAttribute("%s", "%s");' % ((root.tag, num, key, value)))
         for node in root:
-            sub_nodes, count, _ = self._create_dom(node, '%s_%s' % (root.tag, num), count+1, doc=(doc if append_children else 'document'), rename=rename, child_parent=(child_parent if top == None else None))
+            sub_nodes, count, _ = self._create_dom(node, '%s_%s' % (root.tag, num), count+1, doc=doc, rename=rename, child_parent=(child_parent if top == None else None))
             if append_children:
                 statements.extend(sub_nodes)
             else:
@@ -961,15 +961,19 @@ class Button(SimpleButton):
         popupset = self._settings.get('file_to_popupset')
         if 'viewid' in root.attrib and file_name in popupset:
             statements, _, children = self._create_dom(root, child_parent="popupset", rename={"menupopup": "panelview"}, append_children=False)
-            children.insert(0, "var popupset = document.getElementById('%s');" % popupset.get(file_name))
-            children = "\n\t".join(children)
+            children.insert(0, "var popupset = doc.getElementById('%s');" % popupset.get(file_name))
+            data = {
+                "type": "'view'",
+                "onBeforeCreated": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(children),
+                "onBuild": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(statements),
+            }
         else:
             children = ''
             statements, _, _ = self._create_dom(root)
-        data = {
-            "type": "'custom'",
-            "onBuild": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(statements)
-        }
+            data = {
+                "type": "'custom'",
+                "onBuild": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(statements)
+            }
         toolbar_max_count = self._settings.get("buttons_per_toolbar")
         if add_to_main_toolbar and button_id in add_to_main_toolbar:
             data['defaultArea'] = "'%s'" % self._settings.get('file_to_main_toolbar').get(file_name)
@@ -986,14 +990,15 @@ class Button(SimpleButton):
                 self._button_commands[file_name][button_id] = value
             elif key == 'viewid':
                 data["viewId"] = "'%s'" % value
-                data["type"] = "'view'"
             elif key == 'onviewshowing':
                 data["onViewShowing"] = "function(event){\n\t\t\t%s\n\t\t}" % value
+            elif key == 'onviewhideing':
+                data["onViewHiding"] = "function(event){\n\t\t\t%s\n\t\t}" % value
         for js_file in self._get_js_file_list(file_name):
             if self._button_js_setup.get(js_file, {}).get(button_id):
                 data["onCreated"] = "function(aNode){\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
         items = sorted(data.items(), key=self._attr_key)
-        return "\t%s\n\n\tCustomizableUI.createWidget({\n\t\t%s\n\t});" % (children, ",\n\t\t".join("%s: %s" % (key, value) for key, value in items))
+        return "\tCustomizableUI.createWidget({\n\t\t%s\n\t});" % ",\n\t\t".join("%s: %s" % (key, value) for key, value in items)
 
 
     def _create_jsm_button(self, file_name, toolbar_ids, count, button_id, attr):
