@@ -958,14 +958,12 @@ class Button(SimpleButton):
     def _create_dom_button(self, button_id, xul, file_name, count, toolbar_ids):
         add_to_main_toolbar = self._settings.get("add_to_main_toolbar")
         root = ET.fromstring(xul)
-        popupset = self._settings.get('file_to_popupset')
-        if 'viewid' in root.attrib and file_name in popupset:
+        if 'viewid' in root.attrib:
             statements, _, children = self._create_dom(root, child_parent="popupset", rename={"menupopup": "panelview"}, append_children=False)
-            children.insert(0, "var popupset = doc.getElementById('%s');" % popupset.get(file_name))
+            children.insert(0, "var popupset = doc.getElementById('PanelUI-multiView');")
             data = {
                 "type": "'view'",
                 "onBeforeCreated": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(children),
-                "onBuild": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(statements),
             }
         else:
             children = ''
