@@ -61,11 +61,15 @@ function loadButtons(window) {
 }
 
 function unloadButtons(window) {
+	var gScope = null;
+	var toolbar_buttons = null;
+	
 	var document = window.document;
 	var button_ids = {{button_ids}};
 	var toolbar_ids = {{toolbar_ids}};
 	if(!usingCustomizableUI) { //this is out own hacked up version
 		CustomizableUI = CustomizableUIs[window];
+		delete CustomizableUIs[window];
 	}
 	for(var i in button_ids) {
 		var button_id = button_ids[i];
