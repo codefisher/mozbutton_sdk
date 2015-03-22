@@ -219,6 +219,9 @@ config = {
         "read": ("taskPopup", "tasksMenuAfterDeleteSeparator"),
         "suite_browser": ("taskPopup", "navBeginGlobalItems"),
     },
+    "file_to_popupset": {
+        "browser": "mainPopupSet",
+    },
     "file_exclude": {
         "lightning": ("mail", "messenger")
     }

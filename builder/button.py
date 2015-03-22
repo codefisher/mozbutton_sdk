@@ -295,6 +295,8 @@ class Button(SimpleButton):
 
     def _process_xul_file(self, folder, button, xul_file, file_name):
         application = SimpleButton._process_xul_file(self, folder, button, xul_file, file_name)
+        if xul_file != "%s.xul" % file_name and self._button_xul.get(file_name, {}).get(button):
+            return
         self._suported_applications.update(set(application).intersection(self._applications))
         self._button_files.add(file_name)
         with open(os.path.join(folder, xul_file)) as xul:
@@ -567,7 +569,7 @@ class Button(SimpleButton):
                             values.update({"top": top, "left": left, "bottom": bottom, "right": right})
                             lines.append("""%(selectors)s {"""
                                      """\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/button.png") !important;"""
-                                     """\n\t-moz-image-region: rect(%(top)spx %(right)spx %(bottom)spx %(left)spx);\n}""" % values)
+                                     """\n\t-moz-image-region: rect(%(top)spx %(right)spx %(bottom)spx %(left)spx) !important;\n}""" % values)
                 else:
                     values["image"] = image
                     for size in icon_size_set:
@@ -575,7 +577,7 @@ class Button(SimpleButton):
                             values["size"] = size
                             values["selectors"] = ", ".join(selectors[size])   
                             lines.append("""%(selectors)s {\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/%(image)s") !important;"""
-                                     """\n\t-moz-image-region: rect(0px %(size)spx %(size)spx 0px);\n}""" % values)
+                                     """\n\t-moz-image-region: rect(0px %(size)spx %(size)spx 0px) !important;\n}""" % values)
         if self._settings.get("merge_images"):
             for size in icon_size_set:
                 if size is not None:
@@ -790,7 +792,7 @@ class Button(SimpleButton):
     def jsm_keyboard_shortcuts(self, file_name):
         keys = self.get_keyboard_shortcuts(file_name)
         if keys:
-            statements, count = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', keys)), doc="document")
+            statements, count, _ = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', keys)), doc="document")
             statements.pop(-1)
             statements.insert(0, "var keyset_0 = document.getElementById('%s');\n\tif(!keyset_0) {" % self._settings.get("file_to_keyset").get(file_name))
             statements.insert(3, 'document.documentElement.appendChild(keyset_0);\n\t}')
@@ -854,10 +856,12 @@ class Button(SimpleButton):
         return """\n<menupopup id="%s">\n\t%s\n</menupopup>\n""" % (menu_name, "\n\t".join(data))
 
     def _jsm_create_menu(self, file_name, buttons):
+        if not self._settings.get('create_menu'):
+            return ''
         menu = self._create_menu(file_name, buttons)
         if menu and self._settings.get("menu_meta"):
             menu_id, menu_label = self._settings.get("menu_meta")
-            statements, count = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', menu)), doc="document")
+            statements, count, _ = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', menu)), doc="document")
             menu_name, insert_after = self._settings.get("file_to_menu").get(file_name)
             if self._settings.get("as_submenu"):
                 statements[0] = """var menupopup_0 = document.getElementById('%s');
@@ -888,10 +892,13 @@ class Button(SimpleButton):
         else:
             return "buttonStrings.get('%s')" % value
 
-    def _create_dom(self, root, top=None, count=0, doc='doc'):
+    def _create_dom(self, root, top=None, count=0, doc='doc', child_parent=None, rename=None, append_children=True):
         num = count
+        if rename == None:
+            rename = {}
+        children = []
         statements = [
-            "var %s_%s = %s.createElement('%s');" % (root.tag, num, doc, root.tag),
+            "var %s_%s = %s.createElement('%s');" % (root.tag, num, doc, rename.get(root.tag, root.tag)),
         ]
         for key, value in sorted(root.attrib.items(), key=self._attr_key):
             if key == 'id':
@@ -928,16 +935,19 @@ class Button(SimpleButton):
             else:
                 statements.append('%s_%s.setAttribute("%s", "%s");' % ((root.tag, num, key, value)))
         for node in root:
-            sub_nodes, count = self._create_dom(node, '%s_%s' % (root.tag, num), count+1, doc=doc)
-            statements.extend(sub_nodes)
+            sub_nodes, count, _ = self._create_dom(node, '%s_%s' % (root.tag, num), count+1, doc=(doc if append_children else 'document'), rename=rename, child_parent=(child_parent if top == None else None))
+            if append_children:
+                statements.extend(sub_nodes)
+            else:
+                children = sub_nodes
         if not top:
             statements.append('return %s_%s;' % (root.tag, num))
         else:
             if "insertafter" in root.attrib:
                 statements.append("%s.insertBefore(%s_%s, %s.getElementById('%s').nextSibling);" % (top, root.tag, num, doc, root.attrib.get("insertafter")))
             else:
-                statements.append('%s.appendChild(%s_%s);' % (top, root.tag, num))
-        return statements, count
+                statements.append('%s.appendChild(%s_%s);' % (top if not child_parent else child_parent, root.tag, num))
+        return statements, count, children
     
     def _attr_key(self, attr):
         order = ('id', 'defaultarea', 'type', 'label', 'tooltiptext', 'command', 'onclick', 'oncommand')
@@ -948,7 +958,14 @@ class Button(SimpleButton):
     def _create_dom_button(self, button_id, xul, file_name, count, toolbar_ids):
         add_to_main_toolbar = self._settings.get("add_to_main_toolbar")
         root = ET.fromstring(xul)
-        statements, _ = self._create_dom(root)
+        popupset = self._settings.get('file_to_popupset')
+        if 'viewid' in root.attrib and file_name in popupset:
+            statements, _, children = self._create_dom(root, child_parent="popupset", rename={"menupopup": "panelview"}, append_children=False)
+            children.insert(0, "var popupset = document.getElementById('%s');" % popupset.get(file_name))
+            children = "\n\t".join(children)
+        else:
+            children = ''
+            statements, _, _ = self._create_dom(root)
         data = {
             "type": "'custom'",
             "onBuild": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(statements)
@@ -967,11 +984,16 @@ class Button(SimpleButton):
                 data[key] = "'%s'" % value
             elif key == 'oncommand':
                 self._button_commands[file_name][button_id] = value
+            elif key == 'viewid':
+                data["viewId"] = "'%s'" % value
+                data["type"] = "'view'"
+            elif key == 'onviewshowing':
+                data["onViewShowing"] = "function(event){\n\t\t\t%s\n\t\t}" % value
         for js_file in self._get_js_file_list(file_name):
             if self._button_js_setup.get(js_file, {}).get(button_id):
                 data["onCreated"] = "function(aNode){\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
         items = sorted(data.items(), key=self._attr_key)
-        return "\tCustomizableUI.createWidget({\n\t\t%s\n\t});" % ",\n\t\t".join("%s: %s" % (key, value) for key, value in items)
+        return "\t%s\n\n\tCustomizableUI.createWidget({\n\t\t%s\n\t});" % (children, ",\n\t\t".join("%s: %s" % (key, value) for key, value in items))
 
 
     def _create_jsm_button(self, file_name, toolbar_ids, count, button_id, attr):
@@ -1073,7 +1095,7 @@ class Button(SimpleButton):
                 continue
             toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
             toolbox = '\n<%s id="%s">\n%s\n</%s>' % (toolbar_node, toolbar_box, '\n'.join(toolbars), toolbar_node)
-            statements, count = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', toolbox)), count=num, doc="document")
+            statements, count, _ = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', toolbox)), count=num, doc="document")
             count += 1
             statements.pop(-1)
             statements.pop(1)
