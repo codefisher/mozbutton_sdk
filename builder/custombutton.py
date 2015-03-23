@@ -76,7 +76,7 @@ class CButton(Button):
     def get_init(self, window):
         xul = self._button_xul[window][self._the_button]
         root = ET.fromstring(re.sub(r'&([^;]+);', r'\1', xul))
-        statements, _ = self._create_dom(root, doc='document')
+        statements, _, children = self._create_dom(root, doc='document')
         statements.pop(-1)
         statements.pop(0)
         self._button_js_setup
