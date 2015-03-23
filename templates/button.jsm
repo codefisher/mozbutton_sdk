@@ -13,6 +13,8 @@ try {
 	var CustomizableUI = null;
 	Cu.import("chrome://{{chrome-name}}/content/customizable.jsm");
 }
+
+Cu.import('resource://gre/modules/Services.jsm');
 Cu.import("resource://services-common/stringbundle.js");
 {{modules}}
 
