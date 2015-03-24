@@ -367,7 +367,7 @@ class Button(SimpleButton):
                 self._option_icons.add(icon)
                 self._option_titles.add(panel)
                 data = "\n\t\t\t\t".join("\n".join(info['data']).split("\n"))
-                panel_xml = """\t\t\t<prefpane id="toolbar-buttons-prefpane-%s" image="chrome://%s/skin/option/%s" label="&%s;" flex="1"><vbox flex="1" style="overflow:auto; max-height:min(100%%, 400px);">%s</vbox></prefpane>"""  % (
+                panel_xml = """\t\t\t<prefpane id="prefpane-%s" image="chrome://%s/skin/option/%s" label="&%s;" flex="1"><vbox flex="1" style="overflow:auto; max-height:min(100%%, 400px);">%s</vbox></prefpane>"""  % (
                                     panel.replace('.', '-'), self._settings.get("chrome_name"), icon, panel, data)
                 button_pref.append(panel_xml)
             result["%s-options" % application] = overlay_window.replace("{{options}}",
@@ -697,8 +697,8 @@ class Button(SimpleButton):
             self._button_options_js.update(dict((name, function) for function, name
                                in function_name_match.findall(shared_functions)
                                if name in js_options_include))
-            js_files["option"] = (
-                    "toolbar_buttons.toolbar_button_loader(toolbar_buttons, {\n\t%s\n});%s"
+            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "option.js")) as option_fp:
+                js_files["option"] = (option_fp.read()
                     % ("\n\t".join(",\n".join(val for val in self._button_options_js.values() if val).split("\n")), "\n".join(extra_javascript)))
         if (self._settings.get("show_updated_prompt") or self._settings.get("add_to_main_toolbar")) and not self._settings.get('restartless'):
             update_file = os.path.join(self._settings.get("project_root"), "files", "update.js")

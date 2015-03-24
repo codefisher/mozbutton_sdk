@@ -8,6 +8,6 @@
 <prefwindow id="tbutton-options"  
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	persist="screenX screenY" title="&options.window.title;" >
-	{{javascript}}
 	{{options}}
+	{{javascript}}
 </prefwindow>
