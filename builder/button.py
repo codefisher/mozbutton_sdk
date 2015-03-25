@@ -686,7 +686,7 @@ class Button(SimpleButton):
         if self._button_options_js:
             extra_javascript = []
             for button, value in self._button_options_js.iteritems():
-                # dependency resolution is not enabled here yet
+                #TODO: dependency resolution is not enabled here yet
                 js_options_include.update(include_match.findall(value))
                 js_options_include.update(detect_depandancy.findall(self._button_options[button][1]))
                 value = include_match_replace.sub("", value)
