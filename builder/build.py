@@ -76,7 +76,19 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     else:
         for file, data in buttons.get_xul_files().iteritems():
             xpi.writestr(os.path.join("chrome", "content", file + ".xul"), bytes_string(data)) 
-    
+
+    if settings.get("fix_meta"):
+        locale_str = buttons.locale_string(button_locale=button_locales, locale_name=locales[0] if len(locales) == 1 else None)
+        labels = sorted([locale_str("label", button) for button in buttons.buttons()], key=unicode.lower)
+        if len(buttons) == 1:
+            button = buttons.buttons()[0]
+            settings["name"] = "%s Button" % labels[0]
+            settings["description"] = buttons.get_description(button)
+            if not settings.get("icon"):
+                settings["icon"] = buttons.get_icons(button)
+        else:
+            settings["description"] = "A customized version of Toolbar Buttons including the buttons: %s" % ", ".join(labels)
+
     locale_prefix = settings.get("locale_file_prefix")    
     if settings.get('restartless'):
         dtd_data = button_locales.get_dtd_data(buttons.get_locale_strings(), buttons, untranslated=False, format="%s=%s")
@@ -137,18 +149,6 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
                     print "can not find file %s" % image
     for file_name, data in image_data.iteritems():
         xpi.writestr(os.path.join("chrome", file_name), data)
-    
-    if settings.get("fix_meta"):
-        locale_str = buttons.locale_string(button_locale=button_locales, locale_name=locales[0] if len(locales) == 1 else None)
-        labels = sorted([locale_str("label", button) for button in buttons.buttons()], key=unicode.lower)
-        if len(buttons) == 1:
-            button = buttons.buttons()[0]
-            settings["name"] = "%s Button" % labels[0]
-            settings["description"] = buttons.get_description(button)
-            if not settings.get("icon"):
-                settings["icon"] = buttons.get_icons(button)
-        else:
-            settings["description"] = "A customized version of Toolbar Buttons including the buttons: %s" % ", ".join(labels)
     if settings.get("icon"):
         xpi.write(get_image(settings, "32", settings.get("icon")), "icon.png")
     else:

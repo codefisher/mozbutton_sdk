@@ -192,7 +192,7 @@ class Locale(object):
             if self._settings.get("translate_description"):
                 description = "extensions.%s.description" % self._settings.get("extension_id")
                 if locale == default_locale:
-                    properties_file.append("%s=%s" % (description, self._settings.get("description")))
+                    properties_file.append("%s=%s" % (description, re.sub(r'[\r\n]+', r'\\n ', self._settings.get("description"))))
                 elif description in self._properties[locale]:
                     properties_file.append("%s=%s" % (description, self._properties[locale][description]))
             result[locale] = "\n".join(properties_file)
