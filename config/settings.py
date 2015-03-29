@@ -57,7 +57,11 @@ config = {
     "menu_meta": None,
     "default_show_menu_pref": "true",
     # where the menu should be placed
-    "as_submenu": True,
+    # it it is None, all buttons will be placed in a submenu
+    # if a string, all buttons will be placed in that menu
+    # if a dict each button will be placed in the named location
+    # if a tuple, in what is named in the tuple, which should be the id of the menu, and insert point
+    "menu_placement": None,
     # if set, the disciption will be change to list the buttons in the extension
     # and if there is only one button, also the title and icon will be change
     "fix_meta": False,
@@ -213,11 +217,16 @@ config = {
         "compose": "editorKeys",
     },
     "file_to_menu": {
-        "browser": ("menu_ToolsPopup", "devToolsSeparator"),
-        "mail": ("taskPopup", "addonsManager"),
-        "compose": ("taskPopup", "tasksMenuMail"),
-        "read": ("taskPopup", "tasksMenuAfterDeleteSeparator"),
-        "suite_browser": ("taskPopup", "navBeginGlobalItems"),
+        "tools": {
+            "browser": ("menu_ToolsPopup", "devToolsSeparator"),
+            "mail": ("taskPopup", "addonsManager"),
+            "compose": ("taskPopup", "tasksMenuMail"),
+            "read": ("taskPopup", "tasksMenuAfterDeleteSeparator"),
+            "suite_browser": ("taskPopup", "navBeginGlobalItems"),
+        },
+        "file": {
+            "browser": ("menu_FilePopup", "goOfflineMenuitem"),
+        }
     },
     "file_exclude": {
         "lightning": ("mail", "messenger")

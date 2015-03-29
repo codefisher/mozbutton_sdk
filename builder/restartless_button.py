@@ -6,6 +6,7 @@ import math
 import hashlib
 from collections import defaultdict
 import grayscale
+import codecs
 from util import get_pref_folders
 import lxml.etree as ET
 try:
@@ -30,29 +31,40 @@ class RestartlessButton(Button):
     def _jsm_create_menu(self, file_name, buttons):
         if not self._settings.get('create_menu'):
             return ''
-        menu = self.create_menu_dom(file_name, buttons)
-        menu = self._create_menu(file_name, buttons)
-        if menu and self._settings.get("menu_meta"):
-            menu_id, menu_label = self._settings.get("menu_meta")
-            statements, count, _ = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', menu)), doc="document")
-            menu_name, insert_after = self._settings.get("file_to_menu").get(file_name)
-            if self._settings.get("as_submenu"):
-                statements[0] = """var menupopup_0 = document.getElementById('%s');
-    var menu_1 = document.getElementById('%s');
-    if(menu_1) {
-        var menupopup_2 = document.getElementById('%s-popup');
-    } else {""" % (menu_name, menu_id, menu_id)
-                statements.insert(9, """menu_1.appendChild(menupopup_2);
-    menupopup_0.insertBefore(menu_1, document.getElementById('%s').nextSibling);
-    }""" % insert_after)
-                statements.pop(-1)
-                statements.pop(-1)
-            else:
-                statements[0] = """var menupopup_0 = document.getElementById('%s');""" % menu_name
-            statements.pop(1)
-            statements.pop(-1)
-            return "\n\t".join(statements)
-        return ''
+        menu_placement = self._menu_placement(file_name, buttons)
+        menu_id, menu_label = self._settings.get("menu_meta")
+        if menu_placement:
+            menu_name, insert_after = menu_placement
+        elif self._settings.get("file_to_menu").get('tools').get(file_name):
+            menu_name, insert_after = self._settings.get("file_to_menu").get('tools').get(file_name)
+        else:
+            return ''
+        statements = []
+        data = self.create_menu_dom(file_name, buttons)
+        if not menu_placement and self._settings.get("menu_meta"):
+            with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'menu.js'), encoding='utf-8') as template_file:
+                template = template_file.read()
+            statements.append(template % {
+                "menu_name": menu_name,
+                "menu_id": menu_id,
+                "label": menu_label,
+                "menu_label": menu_label,
+                "insert_after": insert_after
+            })
+            num = 3
+            for item in data:
+                item_statements, count, _ = self._create_dom(item, top="menupopup_2", count=num, doc="document")
+                num += count
+                statements.extend(item_statements)
+        else:
+            statements.append("""var menupopup_0 = document.getElementById('%s');""" % menu_name)
+            num = 1
+            for item in data:
+                item.attrib["insertafter"] = insert_after
+                item_statements, count, _ = self._create_dom(item, top="menupopup_0", count=num, doc="document")
+                num += count
+                statements.extend(item_statements)
+        return "\n\t".join(statements)
     
     def _dom_string_lookup(self, value):
         value = re.sub(r'&([^;]+);', r'\1', value)
@@ -201,7 +213,7 @@ class RestartlessButton(Button):
         return result
 
     def get_jsm_files(self):
-        with open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'button.jsm')) as template_file:
+        with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'button.jsm'), encoding='utf-8') as template_file:
             template = template_file.read()
         result = {}
         simple_button_re = re.compile(r"^<toolbarbutton(.*)/>$", re.DOTALL)

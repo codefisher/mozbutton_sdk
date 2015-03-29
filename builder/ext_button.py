@@ -618,8 +618,6 @@ class Button(SimpleButton):
             return ""
 
     def create_menu_dom(self, file_name, buttons):
-        if not self._settings.get("file_to_menu").get(file_name):
-            return None
         data = []
         for button_id, xul in buttons.iteritems():
             root = ET.fromstring(xul.replace('&', '&amp;'))
@@ -646,18 +644,32 @@ class Button(SimpleButton):
                 return True
         return False
     
+    def _menu_placement(self, file_name, button):
+        menu_placement = self._settings.get("menu_placement")
+        if menu_placement == None:
+            return None
+        elif isinstance(menu_placement, basestring):
+            return self._settings.get("file_to_menu").get(menu_placement, {}).get(file_name)
+        elif isinstance(menu_placement, dict):
+            return self._settings.get("file_to_menu").get(menu_placement.get(button), {}).get(file_name)
+        else:
+            return menu_placement
+    
     def _create_menu(self, file_name, buttons):
-        if not self._settings.get("file_to_menu").get(file_name):
-            return ""
         data = self.create_menu_dom(file_name, buttons)
-        menu_name, insert_after = self._settings.get("file_to_menu").get(file_name)
-        as_submenu = self._settings.get("as_submenu")
+        menu_placement = self._menu_placement(file_name, buttons)
+        if menu_placement:
+            menu_name, insert_after = menu_placement
+        elif self._settings.get("file_to_menu").get('tools').get(file_name):
+            menu_name, insert_after = self._settings.get("file_to_menu").get('tools').get(file_name)
+        else:
+            return
         menupopup = ET.Element("menupopup")
         for item in data:
-            if not as_submenu:
+            if menu_placement:
                 item.attrib['insertafter'] = insert_after
             menupopup.append(item)
-        if as_submenu and self._settings.get("menu_meta"):
+        if not menu_placement and self._settings.get("menu_meta"):
             menu_id, menu_label = self._settings.get("menu_meta")
             menu = ET.Element("menu", {"insertafter": insert_after, "id": menu_id, "label": "&%s;" % menu_label })
             menupopup.attrib.update({
