@@ -3,7 +3,7 @@ import os
 import re
 import base64
 import urllib
-import xml.etree.ElementTree as ET
+import lxml.etree as ET
 
 CUSTOM_XUL = '''<?xml version="1.0" encoding="UTF-8"?>
 <custombutton xmlns:cb="http://xsms.nm.ru/custombuttons/">

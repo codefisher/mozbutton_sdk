@@ -3,10 +3,9 @@
 
 import os
 import zipfile
-import io
 from locales import Locale
-from button import Button, get_image
-from util import get_button_folders, get_locale_folders, get_folders
+from button import get_image, RestartlessButton, OverlayButton
+from util import get_locale_folders, get_folders
 from app_versions import get_app_versions
 import codecs
 from collections import defaultdict
@@ -28,7 +27,7 @@ def apply_max_version(settings):
         app_data[key] = rows
 
 
-def get_buttons(settings, cls=Button):
+def get_buttons(settings, cls=None):
     if "all" in settings.get("applications", "all"):
         applications = settings.get("applications_data").keys()
     elif isinstance(settings.get("applications"), basestring):
@@ -44,7 +43,11 @@ def get_buttons(settings, cls=Button):
         staging_button_folders, staging_buttons = get_folders(button_list, settings, name)
         button_folders.extend(staging_button_folders)
         button_names.extend(staging_buttons)
-    
+    if not cls:
+        if settings.get('restartless'):
+            cls = RestartlessButton
+        else:
+            cls = OverlayButton
     buttons = cls(button_folders, button_names, settings, applications)
     return buttons
 
