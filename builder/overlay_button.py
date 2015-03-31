@@ -31,7 +31,7 @@ class OverlayButton(Button):
             for js_file in self._get_js_file_list(file_name):
                 js_includes.append("""<script type="application/x-javascript" src="chrome://%s/content/%s.js"/>""" % (self._settings.get("chrome_name"), js_file))
             toolbars, toolbar_ids = self._wrap_create_toolbar(button_hash, toolbar_template, file_name, values)
-            menu = self._create_menu(file_name, values) if self._settings.get("create_menu") else ""
+            menu = self._create_menu(file_name, values) if self._settings.get("menuitems") else ""
             xul_file = (template.replace("{{buttons}}", "\n  ".join(values.values()))
                                 .replace("{{script}}", "\n ".join(js_includes))
                                 .replace("{{keyboard_shortcut}}", self.get_keyboard_shortcuts(file_name))

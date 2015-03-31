@@ -29,21 +29,20 @@ class RestartlessButton(Button):
         return ''
     
     def _jsm_create_menu(self, file_name, buttons):
-        if not self._settings.get('create_menu'):
+        if not self._settings.get('menuitems'):
             return ''
-        menu_placement = self._menu_placement(file_name, buttons)
-        menu_id, menu_label = self._settings.get("menu_meta")
-        if menu_placement:
-            menu_name, insert_after = menu_placement
-        elif self._settings.get("file_to_menu").get('tools').get(file_name):
-            menu_name, insert_after = self._settings.get("file_to_menu").get('tools').get(file_name)
-        else:
-            return ''
+        menu_id, menu_label, location = self._settings.get("menu_meta")
         statements = []
         data = self.create_menu_dom(file_name, buttons)
-        if not menu_placement and self._settings.get("menu_meta"):
-            with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'menu.js'), encoding='utf-8') as template_file:
+        in_submenu = {button: menuitem for button, menuitem in data.items() if menuitem.parent_id is None}
+        in_menu = {button: menuitem for button, menuitem in data.items() if menuitem.parent_id is not None}
+        num = 0
+        meta = self._settings.get("file_to_menu").get(location, {}).get(file_name)
+        if in_submenu and meta:
+            with codecs.open(os.path.join(self._settings.get('button_sdk_root'),
+                                          'templates', 'menu.js'), encoding='utf-8') as template_file:
                 template = template_file.read()
+            menu_name, insert_after = meta
             statements.append(template % {
                 "menu_name": menu_name,
                 "menu_id": menu_id,
@@ -51,19 +50,19 @@ class RestartlessButton(Button):
                 "menu_label": menu_label,
                 "insert_after": insert_after
             })
-            num = 3
-            for item in data:
+            num += 3
+            for item, _, _ in in_submenu.values():
                 item_statements, count, _ = self._create_dom(item, top="menupopup_2", count=num, doc="document")
                 num += count
                 statements.extend(item_statements)
-        else:
-            statements.append("""var menupopup_0 = document.getElementById('%s');""" % menu_name)
-            num = 1
-            for item in data:
-                item.attrib["insertafter"] = insert_after
-                item_statements, count, _ = self._create_dom(item, top="menupopup_0", count=num, doc="document")
-                num += count
-                statements.extend(item_statements)
+        for item, menu_name, insert_after in in_menu.values():
+            statements.append("var menupopup_%s = document.getElementById('%s');" % (num, menu_name))
+            var_name = "menupopup_%s" % num
+            num += 1
+            item.attrib["insertafter"] = insert_after
+            item_statements, count, _ = self._create_dom(item, top=var_name, count=num, doc="document")
+            num += count
+            statements.extend(item_statements)
         return "\n\t".join(statements)
     
     def _dom_string_lookup(self, value):
@@ -101,7 +100,7 @@ class RestartlessButton(Button):
                     # in the window scope, so the event listener has to be used
                     statements.append("%s_%s.setAttribute('oncommand', 'void(0);');" % (root.tag, num))
                 if key == 'oncommand' and self._settings.get("custom_button_mode") and top == None:
-                    self._command = value;
+                    self._command = value
                 else:
                     this = 'var aThis = event.target;\n\t\t\t\t' if 'this' in value else ''
                     statements.append("%s_%s.addEventListener('%s', function(event) {\n\t\t\t\t%s%s\n\t\t\t}, false);" % (root.tag, num, key[2:], this, value.replace('this', 'aThis')))
@@ -218,7 +217,7 @@ class RestartlessButton(Button):
         result = {}
         simple_button_re = re.compile(r"^<toolbarbutton(.*)/>$", re.DOTALL)
         attr_match = re.compile(r'''\b([\w\-]+)="([^"]*)"''', re.DOTALL)
-        simple_attrs = set(['label', 'tooltiptext', 'id', 'oncommand', 'onclick', 'key', 'class'])
+        simple_attrs = {'label', 'tooltiptext', 'id', 'oncommand', 'onclick', 'key', 'class'}
         button_hash, toolbar_template = self._get_toolbar_info()
         
         for file_name, values in self._button_xul.iteritems():
@@ -245,7 +244,7 @@ class RestartlessButton(Button):
                 count += 1
             modules_import = "\n" + "\n".join("try { Cu.import('%s'); } catch(e) {}" % mod for mod in modules if mod)
             if self._settings.get("menu_meta"):
-                menu_id, menu_label = self._settings.get("menu_meta")
+                menu_id, menu_label, _ = self._settings.get("menu_meta")
             else:
                 menu_id, menu_label = "", ""
             end = []
@@ -253,7 +252,7 @@ class RestartlessButton(Button):
             for js_file in set(self._get_js_file_list(file_name) + [file_name]):
                 if self._button_js_setup.get(js_file, {}).get(button_id):
                     end.append(self._button_js_setup[js_file][button_id])
-            if self._settings.get("create_menu") and menu:
+            if self._settings.get("menuitems") and menu:
                 end.append("toolbar_buttons.setUpMenuShower();")
             result[file_name] = (template.replace('{{locale-file-prefix}}', self._settings.get("locale_file_prefix"))
                         .replace('{{modules}}', modules_import)
@@ -283,12 +282,11 @@ class RestartlessButton(Button):
                 continue
             toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
             toolbox = '\n<%s id="%s">\n%s\n</%s>' % (toolbar_node, toolbar_box, '\n'.join(toolbars), toolbar_node)
-            statements, count, _ = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', toolbox)), count=num, doc="document")
+            statements, count, _ = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', toolbox)), count=num,
+                                                    doc="document")
             count += 1
             statements.pop(-1)
             statements.pop(1)
             statements[0] = "var %s_%s = document.getElementById('%s');" % (toolbar_node, num, toolbar_box)
             result.extend(statements)
         return "\n\t".join(result), toolbar_ids
-
-    

@@ -7,12 +7,15 @@ import hashlib
 from collections import defaultdict
 import grayscale
 from util import get_pref_folders
+from collections import namedtuple
 import lxml.etree as ET
 try:
     from PIL import Image
 except ImportError:
     pass
 from simple_button import SimpleButton, get_image
+
+Menuitem = namedtuple('Menuitem', ['node', 'parent_id', 'insert_after'])
 
 class Button(SimpleButton):
     def __init__(self, folders, buttons, settings, applications):
@@ -148,11 +151,11 @@ class Button(SimpleButton):
                        .replace("{{chrome-name}}", self._settings.get("chrome_name"))
                        .replace("{{locale_file_prefix}}", self._settings.get("locale_file_prefix"))
                        .replace("{{javascript}}", javascript))
-        if self._settings.get("create_menu"):
+        if self._settings.get("menuitems"):
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "showmenu-option.xul"), "r") as menu_option_file:
                 menu_option_tempate = menu_option_file.read() 
             if self._settings.get("as_submenu") and self._settings.get("menu_meta"):
-                menu_id, menu_label = self._settings.get("menu_meta")
+                menu_id, menu_label, location = self._settings.get("menu_meta")
                 self._button_options[menu_id] = ("tb-show-a-menu.option.title:menu.png", 
                         menu_option_tempate.replace("{{menu_id}}", menu_id).replace("{{menu_label}}", menu_label))
                 self._button_applications[menu_id] = self._applications
@@ -260,9 +263,9 @@ class Button(SimpleButton):
                          """'chrome://%s/locale/%sbutton.properties'""" % (self._settings.get("chrome_name"), self._settings.get("locale_file_prefix"))))
         if self._settings.get("show_updated_prompt") or self._settings.get("add_to_main_toolbar"):
             settings.append(("%s%s" % (self._settings.get("pref_root"), self._settings.get("current_version_pref")), "''"))
-        if self._settings.get("create_menu"):
+        if self._settings.get("menuitems"):
             if self._settings.get("as_submenu") and self._settings.get("menu_meta"):
-                menu_id, menu_label = self._settings.get("menu_meta")
+                menu_id, menu_label, location = self._settings.get("menu_meta")
                 settings.append(("%sshowamenu.%s" % (self._settings.get("pref_root"), menu_id), self._settings.get("default_show_menu_pref")))
             else:
                 for button in self._buttons:
@@ -286,7 +289,7 @@ class Button(SimpleButton):
             icon_size["window"] = "32"
         else:
             icon_size["window"] = small if int(small) >= 32 else large
-        if self._settings.get('create_menu'):
+        if self._settings.get('menuitems'):
             icon_size["menu"] = "16"
         return icon_size
 
@@ -453,7 +456,7 @@ class Button(SimpleButton):
         for file_name, values in self._button_xul.iteritems():
             for button, xul in values.iteritems():
                 js_imports.update(detect_depandancy.findall(xul))
-        if self._settings.get("create_menu"):
+        if self._settings.get("menuitems"):
             js_imports.add("sortMenu")
             js_imports.add("handelMenuLoaders")
             js_imports.add("setUpMenuShower")
@@ -472,7 +475,7 @@ class Button(SimpleButton):
                 value = multi_line_replace.sub("\n", function_match.sub("", value).strip())
                 if value:
                     self._button_js_setup[file_name][button_id] = value
-            if self._settings.get("create_menu"):
+            if self._settings.get("menuitems"):
                 self._button_js_setup[file_name]["_menu_hider"] = "toolbar_buttons.setUpMenuShower();"
         shared = []
         lib_folder = os.path.join(self._settings.get("project_root"), "files", "lib")
@@ -608,7 +611,7 @@ class Button(SimpleButton):
                 if command:
                     keys.append("""<key %s="&%s.key;" %sid="%s-key" oncommand="%s" />""" % (attr, button, mod, button, command))
                 else:
-                    if self._settings.get("create_menu"):
+                    if self._settings.get("menuitems"):
                         keys.append("""<key %s="&%s.key;" %sid="%s-key" command="%s-menu-item" />""" % (attr, button, mod, button, button))
                     else:
                         keys.append("""<key %s="&%s.key;" %sid="%s-key" command="%s" />""" % (attr, button, mod, button, button))
@@ -618,8 +621,12 @@ class Button(SimpleButton):
             return ""
 
     def create_menu_dom(self, file_name, buttons):
-        data = []
+        data = {}
+        menuitems = self._settings.get("menuitems")
+        menu_placement = self._menu_placement(file_name, buttons)
         for button_id, xul in buttons.iteritems():
+            if not menuitems or button_id not in menuitems or button_id not in menu_placement:
+                continue
             root = ET.fromstring(xul.replace('&', '&amp;'))
             root.tag = 'menu' if len(root) else 'menuitem'
             root.attrib['id'] = "%s-menu-item" % button_id
@@ -635,7 +642,11 @@ class Button(SimpleButton):
                 root[0].insert(0, ET.Element("menuitem", root.attrib))
             root.attrib.pop("type", None)
             root.attrib.pop("tooltiptext", None)
-            data.append(root)
+            placement = menu_placement.get(button_id)
+            if placement:
+                data[button_id] = Menuitem(root, *placement)
+            else:
+                data[button_id] = Menuitem(root, None, None)
         return data
 
     def _list_has_str(self, lst, text):
@@ -644,16 +655,23 @@ class Button(SimpleButton):
                 return True
         return False
     
-    def _menu_placement(self, file_name, button):
+    def _menu_placement(self, file_name, buttons):
         menu_placement = self._settings.get("menu_placement")
-        if menu_placement == None:
-            return None
+        file_to_menu = self._settings.get("file_to_menu")
+        if menu_placement is None:
+            result = {button: None for button in buttons}
         elif isinstance(menu_placement, basestring):
-            return self._settings.get("file_to_menu").get(menu_placement, {}).get(file_name)
+            placement = file_to_menu.get(menu_placement).get(file_name)
+            if placement is None:
+                result = {}
+            else:
+                result = {button: placement for button in buttons}
         elif isinstance(menu_placement, dict):
-            return self._settings.get("file_to_menu").get(menu_placement.get(button), {}).get(file_name)
+            result = {button: file_to_menu.get(menu_placement.get(button), {}).get(file_name)
+                      for button in buttons if button in menu_placement}
         else:
-            return menu_placement
+            result = {button: menu_placement for button in buttons}
+        return result
     
     def _create_menu(self, file_name, buttons):
         data = self.create_menu_dom(file_name, buttons)
@@ -670,7 +688,7 @@ class Button(SimpleButton):
                 item.attrib['insertafter'] = insert_after
             menupopup.append(item)
         if not menu_placement and self._settings.get("menu_meta"):
-            menu_id, menu_label = self._settings.get("menu_meta")
+            menu_id, menu_label, location = self._settings.get("menu_meta")
             menu = ET.Element("menu", {"insertafter": insert_after, "id": menu_id, "label": "&%s;" % menu_label })
             menupopup.attrib.update({
                 "sortable": "true",

@@ -53,7 +53,7 @@ config = {
     # a list of buttons to be loaded onto the main toolbar
     "add_to_main_toolbar": None,
     # if a menu should be added with all the buttons that can be changed into menu items
-    "create_menu": False,
+    "menuitems": (),
     "menu_meta": None,
     "default_show_menu_pref": "true",
     # where the menu should be placed
@@ -62,6 +62,7 @@ config = {
     # if a dict each button will be placed in the named location
     # if a tuple, in what is named in the tuple, which should be the id of the menu, and insert point
     "menu_placement": None,
+
     # if set, the disciption will be change to list the buttons in the extension
     # and if there is only one button, also the title and icon will be change
     "fix_meta": False,
@@ -226,6 +227,9 @@ config = {
         },
         "file": {
             "browser": ("menu_FilePopup", "goOfflineMenuitem"),
+        },
+        "toolbar": {
+            "browser": ("toolbar-context-menu","viewToolbarsMenuSeparator"),
         }
     },
     "file_exclude": {

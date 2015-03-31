@@ -164,8 +164,9 @@ class Locale(object):
                    "tb-toolbar-buttons-toggle-toolbar.label",
                    "tb-toolbar-buttons-toggle-toolbar.tooltip",
                    "tb-toolbar-buttons-toggle-toolbar.name"))
-        if self._settings.get("create_menu"):
-            strings.append("tb-toolbar-buttons.menu")
+        if self._settings.get("menuitems") and self._settings.get("menu_meta"):
+            _, menu_label, _ = self._settings.get("menu_meta")
+            strings.append(menu_label)
         for locale in self._locales:
             for string in strings:
                 if self._dtd[locale].get(string):

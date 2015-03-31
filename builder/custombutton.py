@@ -134,7 +134,7 @@ class CButton(Button):
 def create_custombutton(settings, window, button_locales=None):
     settings.update({
         "include_toolbars": False,
-        "create_menu": False,
+        "menuitems": (),
         "custom_button_mode": True,
         "show_updated_prompt": False,
         "add_to_main_toolbar": False,

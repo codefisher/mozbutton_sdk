@@ -48,6 +48,11 @@ def get_buttons(settings, cls=None):
             cls = RestartlessButton
         else:
             cls = OverlayButton
+    menuitems = settings.get("menuitems")
+    if not menuitems:
+        settings["menuitems"] = ()
+    elif "all" in menuitems:
+        settings["menuitems"] = button_names
     buttons = cls(button_folders, button_names, settings, applications)
     return buttons
 
