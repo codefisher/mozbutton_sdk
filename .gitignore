@@ -1,5 +1,6 @@
 .project
 .pydevproject
+.idea
 *.pyc
 app_locale
 screen-shot.sh
