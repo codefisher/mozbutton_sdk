@@ -1,7 +1,6 @@
 import os
 import re
-import json
-import io # we might not need this as much now, that PIL as .tobytes()
+import io
 import math
 import hashlib
 from collections import defaultdict
@@ -672,35 +671,6 @@ class Button(SimpleButton):
         else:
             result = {button: menu_placement for button in buttons}
         return result
-    
-    def _create_menu(self, file_name, buttons):
-        data = self.create_menu_dom(file_name, buttons)
-        menu_placement = self._menu_placement(file_name, buttons)
-        if menu_placement:
-            menu_name, insert_after = menu_placement
-        elif self._settings.get("file_to_menu").get('tools').get(file_name):
-            menu_name, insert_after = self._settings.get("file_to_menu").get('tools').get(file_name)
-        else:
-            return
-        menupopup = ET.Element("menupopup")
-        for item in data:
-            if menu_placement:
-                item.attrib['insertafter'] = insert_after
-            menupopup.append(item)
-        if not menu_placement and self._settings.get("menu_meta"):
-            menu_id, menu_label, location = self._settings.get("menu_meta")
-            menu = ET.Element("menu", {"insertafter": insert_after, "id": menu_id, "label": "&%s;" % menu_label })
-            menupopup.attrib.update({
-                "sortable": "true",
-                "onpopupshowing": "toolbar_buttons.sortMenu(event, this); toolbar_buttons.handelMenuLoaders(event, this);",
-                "id": "%s-popup" % menu_id,
-            })
-            menu.append(menupopup)
-            menupopup = ET.Element("menupopup", {"id", menu_name})
-            menupopup.append(menu)
-        else:
-            menupopup.attrib["id"] = menu_name
-        return ET.tostring(menupopup, pretty_print=True).replace("&amp;", "&")
 
     def _create_toolbar(self, button_hash, toolbar_template, file_name, values):
         toolbar_ids = []

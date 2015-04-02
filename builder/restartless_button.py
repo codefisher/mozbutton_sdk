@@ -1,13 +1,7 @@
 import os
 import re
 import json
-import io # we might not need this as much now, that PIL as .tobytes()
-import math
-import hashlib
-from collections import defaultdict
-import grayscale
 import codecs
-from util import get_pref_folders
 import lxml.etree as ET
 try:
     from PIL import Image

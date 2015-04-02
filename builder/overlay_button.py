@@ -1,22 +1,50 @@
 import os
-import re
-import json
-import io # we might not need this as much now, that PIL as .tobytes()
-import math
-import hashlib
-from collections import defaultdict
-import grayscale
-from util import get_pref_folders
 import lxml.etree as ET
 try:
     from PIL import Image
 except ImportError:
     pass
+import operator
+import itertools
 
 from ext_button import Button
 
 class OverlayButton(Button):
-    
+
+    def _create_menu(self, file_name, buttons):
+        if not self._settings.get('menuitems'):
+            return ''
+        menu_id, menu_label, location = self._settings.get("menu_meta")
+        statements = []
+        data = self.create_menu_dom(file_name, buttons)
+        in_submenu = {button: menuitem for button, menuitem in data.items() if menuitem.parent_id is None}
+        in_menu = [(menuitem.parent_id, menuitem) for button, menuitem in data.items()
+                        if menuitem.parent_id is not None]
+        meta = self._settings.get("file_to_menu").get(location, {}).get(file_name)
+        if in_submenu and meta:
+            menupopup = ET.Element("menupopup")
+            for item, _, _ in in_submenu.values():
+                menupopup.append(item)
+            menu_name, insert_after = meta
+            menu = ET.Element("menu", {"insertafter": insert_after, "id": menu_id, "label": "&%s;" % menu_label })
+            menupopup.attrib.update({
+                "sortable": "true",
+                "onpopupshowing": "toolbar_buttons.sortMenu(event, this); toolbar_buttons.handelMenuLoaders(event, this);",
+                "id": "%s-popup" % menu_id,
+            })
+            menu.append(menupopup)
+            overlay_menupopup = ET.Element("menupopup", {"id": menu_name})
+            overlay_menupopup.append(menu)
+            statements.append(ET.tostring(menupopup, pretty_print=True).replace("&amp;", "&"))
+        if in_menu:
+            for menu_name, items in itertools.groupby(sorted(in_menu), key=operator.itemgetter(0)):
+                menupopup = ET.Element("menupopup", {"id": menu_name})
+                for _, (item, menu_name, insert_after) in items:
+                    item.attrib['insertafter'] = insert_after
+                    menupopup.append(item)
+                statements.append(ET.tostring(menupopup, pretty_print=True).replace("&amp;", "&"))
+        return '\n\t'.join(statements)
+
     def get_xul_files(self):
         """
 
