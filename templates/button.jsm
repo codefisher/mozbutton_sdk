@@ -18,6 +18,8 @@ Cu.import('resource://gre/modules/Services.jsm');
 Cu.import("resource://services-common/stringbundle.js");
 {{modules}}
 
+gShutDownFunctions = [];
+
 var toolbar_buttons = {
 	interfaces: {},
 	// the important global objects used by the extension
@@ -30,7 +32,11 @@ var toolbar_buttons = {
 				parent[object_name] = child[object_name];
 			}
 		}
+	},
+	registerCleanUpFunction: function(func) {
+		gShutDownFunctions.push(func);
 	}
+
 };
 var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getService(Ci.mozIJSSubScriptLoader);
 var gScope = this;
@@ -63,9 +69,6 @@ function loadButtons(window) {
 }
 
 function unloadButtons(window) {
-	var gScope = null;
-	var toolbar_buttons = null;
-	
 	var document = window.document;
 	var button_ids = {{button_ids}};
 	var toolbar_ids = {{toolbar_ids}};
@@ -95,6 +98,11 @@ function unloadButtons(window) {
 			toolbar.parentNode.removeChild(toolbar);
 			CustomizableUI.unregisterArea(toolbar_ids[t], false);
 		}
+	}
+	for(var i = 0; i < gShutDownFunctions.length; i++) {
+		try {
+			gShutDownFunctions[i]();
+		} catch(e) {}
 	}
 }
 
