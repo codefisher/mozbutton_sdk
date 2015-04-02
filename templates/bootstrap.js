@@ -6,7 +6,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 var styleSheets = [Services.io.newURI("chrome://{{chrome-name}}/skin/button.css", null, null)];
 
 function getModules(uri) {
-	var modules = [];	
+	var modules = [];
 	{{loaders}}
 	return modules;
 }

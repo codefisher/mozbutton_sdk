@@ -14,51 +14,68 @@ function customizableUI(toolbox) {
 }
 
 customizableUI.prototype.createWidget = function(aProperties) {
-	try {
 	let document = this.toolbox.ownerDocument;
-	if(aProperties.onBuild) {
-		var button = aProperties.onBuild(document);
-		this.toolbox.palette.appendChild(button);
-	} else {
-		var button = document.createElement('toolbarbutton');
-		button.id = aProperties.id;
-		if(aProperties.label) {
-			button.setAttribute('label', aProperties.label);
-		}
-		if(aProperties.tooltiptext) {
-			button.setAttribute('tooltiptext', aProperties.tooltiptext);
-		}
-		if(aProperties.onCommand) {
-			button.addEventListener('command', aProperties.onCommand, false);
-		}
-		if(aProperties.onClick) {
-			button.addEventListener('click', aProperties.onClick, false);
-		}
-		button.classList.add("toolbarbutton-1");
-		button.classList.add("chromeclass-toolbar-additional");
-		this.toolbox.palette.appendChild(button);
-	}
-	if(aProperties.onCreated) {
-		aProperties.onCreated(button);
-	}
-	if(!restoreToToolbar(this.toolbox, aProperties.id)) {
-		if(aProperties.defaultArea) {
-			var buttonSet = this.toolbox.getAttribute('_addeddefaultset');
-			var buttons = buttonSet.split(",");
-			var index = buttons.indexOf(aProperties.id);
-			if(index == -1) {
-				this.addWidgetToArea(aProperties.id, aProperties.defaultArea, null);
-				if(buttonSet) {
-					buttonSet += ',' + aProperties.id;
-				} else {
-					buttonSet = aProperties.id;
+	//try {
+		if(aProperties.type == 'custom' && aProperties.onBuild) {
+			var button = aProperties.onBuild(document);
+			this.toolbox.palette.appendChild(button);
+		} else {
+			var button = document.createElement('toolbarbutton');
+			button.id = aProperties.id;
+			if(aProperties.label) {
+				button.setAttribute('label', aProperties.label);
+			}
+			if(aProperties.tooltiptext) {
+				button.setAttribute('tooltiptext', aProperties.tooltiptext);
+			}
+			if(aProperties.onBeforeCreated) {
+				aProperties.onBeforeCreated(document);
+			}
+			if(aProperties.type == 'view') {
+				button.setAttribute('type', 'panel');
+				var view = document.getElementById(aProperties.viewId);
+				if(aProperties.onViewShowing) {
+					view.addEventListener('popupshowing', aProperties.onViewShowing, false);
 				}
-				this.toolbox.setAttribute('_addeddefaultset', buttonSet);
-				document.persist(this.toolbox.id, '_addeddefaultset');
+				if(aProperties.onViewHiding) {
+					view.addEventListener('popuphiding', aProperties.onViewHiding, false);
+				}
+				button.appendChild(view);
+			} else {
+				if (aProperties.onCommand) {
+					button.addEventListener('command', aProperties.onCommand, false);
+				}
+				if (aProperties.onClick) {
+					button.addEventListener('click', aProperties.onClick, false);
+				}
+			}
+			button.classList.add("toolbarbutton-1");
+			button.classList.add("chromeclass-toolbar-additional");
+			this.toolbox.palette.appendChild(button);
+		}
+		if(aProperties.onCreated) {
+			aProperties.onCreated(button);
+		}
+		if(!restoreToToolbar(this.toolbox, aProperties.id)) {
+			if(aProperties.defaultArea) {
+				var buttonSet = this.toolbox.getAttribute('_addeddefaultset');
+				var buttons = buttonSet.split(",");
+				var index = buttons.indexOf(aProperties.id);
+				if(index == -1) {
+					this.addWidgetToArea(aProperties.id, aProperties.defaultArea, null);
+					if(buttonSet) {
+						buttonSet += ',' + aProperties.id;
+					} else {
+						buttonSet = aProperties.id;
+					}
+					this.toolbox.setAttribute('_addeddefaultset', buttonSet);
+					document.persist(this.toolbox.id, '_addeddefaultset');
+				}
 			}
 		}
-	}
-	} catch(e) {}
+	//} catch(e) {
+	//	document.defaultView.console.log(e);
+	//}
 };
 
 function getButton(aButtonId, toolbar) {
@@ -88,34 +105,34 @@ function restoreToToolbar(toolbox, aWidgetId) {
 		if(index != -1) {
 			var spacers = 0;
 			try {
-			var beforeNode = getButton(buttons[index], toolbar);
-			while(beforeNode == null && index < buttons.length) {
-				var nodeId = buttons[index];
-				if(nodeId == 'spacer' || nodeId == 'separator' || nodeId == 'spring') {
-					// in the DOM these will have some random ID, and we will not be able to find them
-					// so we keep looking for the next node, and then count back.
-					spacers++;
+				var beforeNode = getButton(buttons[index], toolbar);
+				while(beforeNode == null && index < buttons.length) {
+					var nodeId = buttons[index];
+					if(nodeId == 'spacer' || nodeId == 'separator' || nodeId == 'spring') {
+						// in the DOM these will have some random ID, and we will not be able to find them
+						// so we keep looking for the next node, and then count back.
+						spacers++;
+					} else {
+						beforeNode = getButton(nodeId, toolbar);
+					}
+					index++;
+				}
+				if(!beforeNode && spacers) {
+					// we find so many spacers, but no node to insert before, so we go back as many nodes
+					// as there are spacers
+					beforeNode = toolbar.childNodes[toolbar.childNodes.length-spacers];
 				} else {
-					beforeNode = getButton(nodeId, toolbar);
+					for(var j = 0; j < spacers; j++) {
+						// counting back before the spacers
+						beforeNode = beforeNode.previousSibling;
+					}
 				}
-				index++;
-			}
-			if(!beforeNode && spacers) {
-				// we find so many spacers, but no node to insert before, so we go back as many nodes
-				// as there are spacers
-				beforeNode = toolbar.childNodes[toolbar.childNodes.length-spacers];
-			} else {
-				for(var j = 0; j < spacers; j++) {
-					// counting back before the spacers
-					beforeNode = beforeNode.previousSibling;
-				}
-			}
-			toolbar.insertItem(aWidgetId, beforeNode, null, false);
-			toolbar.setAttribute('currentset', buttonSet);
-			document.persist(toolbar.id, 'currentset');
-			return true;
+				toolbar.insertItem(aWidgetId, beforeNode, null, false);
+				toolbar.setAttribute('currentset', buttonSet);
+				document.persist(toolbar.id, 'currentset');
+				return true;
 			} catch(e) {
-			document.defaultView.alert(e);
+				document.defaultView.console.log(e);
 			}
 		}
 	}

@@ -18,7 +18,7 @@ Cu.import('resource://gre/modules/Services.jsm');
 Cu.import("resource://services-common/stringbundle.js");
 {{modules}}
 
-gShutDownFunctions = [];
+var gShutDownFunctions = [];
 
 var toolbar_buttons = {
 	interfaces: {},

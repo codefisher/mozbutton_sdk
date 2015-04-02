@@ -137,14 +137,13 @@ class RestartlessButton(Button):
         add_to_main_toolbar = self._settings.get("add_to_main_toolbar")
         root = ET.fromstring(xul)
         if 'viewid' in root.attrib:
-            statements, _, children = self._create_dom(root, child_parent="popupset", rename={"menupopup": "panelview"}, append_children=False)
-            children.insert(0, "var popupset = doc.getElementById('PanelUI-multiView');")
+            statements, _, children = self._create_dom(root, child_parent="popupset", rename={"menupopup": "panel"}, append_children=False)
+            children.insert(0, "var popupset = doc.getElementById('PanelUI-multiView') || doc.getElementById('mainPopupSet');")
             data = {
                 "type": "'view'",
                 "onBeforeCreated": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(children),
             }
         else:
-            children = ''
             statements, _, _ = self._create_dom(root)
             data = {
                 "type": "'custom'",
