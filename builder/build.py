@@ -4,7 +4,7 @@
 import os
 import zipfile
 from locales import Locale
-from button import get_image, RestartlessButton, OverlayButton
+from button import get_image, RestartlessButton, OverlayButton, Button
 from util import get_locale_folders, get_folders
 from app_versions import get_app_versions
 import codecs
