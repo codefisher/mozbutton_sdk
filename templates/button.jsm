@@ -72,11 +72,12 @@ function unloadButtons(window) {
 	var document = window.document;
 	var button_ids = {{button_ids}};
 	var toolbar_ids = {{toolbar_ids}};
+	var ui_ids = {{ui_ids}};
 	if(!usingCustomizableUI) { //this is out own hacked up version
 		CustomizableUI = CustomizableUIs[window];
 		delete CustomizableUIs[window];
 	}
-	for(var i in button_ids) {
+	for(var i = 0; i < button_ids.length; i++) {
 		var button_id = button_ids[i];
 		CustomizableUI.destroyWidget(button_id);
 		var key = document.getElementById(button_id + '-key');
@@ -92,11 +93,18 @@ function unloadButtons(window) {
 	if(menu && !menu.firstChild.firstChild) {
 		menu.parentNode.removeChild(menu);
 	}
-	for(var t in toolbar_ids) {
+	for(var t = 0; t < toolbar_ids.length; t++) {
 		var toolbar = document.getElementById(toolbar_ids[t]);
 		if(toolbar) {
 			toolbar.parentNode.removeChild(toolbar);
 			CustomizableUI.unregisterArea(toolbar_ids[t], false);
+		}
+	}
+	for(var i = 0; i < ui_ids.length; i++) {
+		var node = document.getElementById(ui_ids[i]);
+		while(node) {
+			node.parentNode.removeChild(node);
+			var node = document.getElementById(ui_ids[i]);
 		}
 	}
 	for(var i = 0; i < gShutDownFunctions.length; i++) {

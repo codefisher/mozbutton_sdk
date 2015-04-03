@@ -15,7 +15,7 @@ function customizableUI(toolbox) {
 
 customizableUI.prototype.createWidget = function(aProperties) {
 	let document = this.toolbox.ownerDocument;
-	//try {
+	try {
 		if(aProperties.type == 'custom' && aProperties.onBuild) {
 			var button = aProperties.onBuild(document);
 			this.toolbox.palette.appendChild(button);
@@ -73,9 +73,9 @@ customizableUI.prototype.createWidget = function(aProperties) {
 				}
 			}
 		}
-	//} catch(e) {
-	//	document.defaultView.console.log(e);
-	//}
+	} catch(e) {
+		document.defaultView.console.log(e);
+	}
 };
 
 function getButton(aButtonId, toolbar) {

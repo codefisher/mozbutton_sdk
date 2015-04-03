@@ -22,7 +22,7 @@ class Button(SimpleButton):
         self._button_files = set()
         self._button_xul = defaultdict(dict)
 
-        SimpleButton.__init__(self, folders, buttons, settings, applications)
+        super(Button, self).__init__(folders, buttons, settings, applications)
 
         self._button_js = defaultdict(dict)
         self._properties_strings = set()

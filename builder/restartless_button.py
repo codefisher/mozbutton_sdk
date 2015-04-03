@@ -11,6 +11,10 @@ except ImportError:
 from ext_button import Button
 
 class RestartlessButton(Button):
+
+    def __init__(self, *args, **kwargs):
+        super(RestartlessButton, self).__init__(*args, **kwargs)
+        self._ui_ids = set()
     
     def jsm_keyboard_shortcuts(self, file_name):
         keys = self.get_keyboard_shortcuts(file_name)
@@ -137,8 +141,15 @@ class RestartlessButton(Button):
         add_to_main_toolbar = self._settings.get("add_to_main_toolbar")
         root = ET.fromstring(xul)
         if 'viewid' in root.attrib:
-            statements, _, children = self._create_dom(root, child_parent="popupset", rename={"menupopup": "panel"}, append_children=False)
-            children.insert(0, "var popupset = doc.getElementById('PanelUI-multiView') || doc.getElementById('mainPopupSet');")
+            self._ui_ids.add(root.attrib["viewid"])
+            statements, _, children = self._create_dom(root, child_parent="popupset", append_children=False)
+            children[0] = """var popupset = doc.getElementById('PanelUI-multiView');
+			if(popupset) {
+				var menupopup_1 = doc.createElement('panelview');
+			} else {
+			    var menupopup_1 = doc.createElement('menupopup');
+				popupset = doc.documentElement;
+			}"""
             data = {
                 "type": "'view'",
                 "onBeforeCreated": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(children),
@@ -254,6 +265,7 @@ class RestartlessButton(Button):
                         .replace('{{toolbar_ids}}', json.dumps(toolbar_ids))
                         .replace('{{toolbars}}', toolbars)
                         .replace('{{menu_id}}', menu_id)
+                        .replace('{{ui_ids}}', json.dumps(list(self._ui_ids)))
                         .replace('{{toolbox}}', self._settings.get("file_to_toolbar_box").get(file_name, ('', ''))[1])
                         .replace('{{menu}}', menu)
                         .replace('{{keys}}', self.jsm_keyboard_shortcuts(file_name))
