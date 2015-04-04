@@ -46,9 +46,11 @@ function loadButtons(window) {
 	if(!toolbox) {
 		return;
 	}
-	var scope = gScope;
+	var document = window.document;
+	var scope = Object.create(gScope);
 	scope.window = window;
-	scope.document = window.document;
+	scope.document = document;
+
 	if(!usingCustomizableUI) { //this is out own hacked up version
 		CustomizableUI = new customizableUI(toolbox);
 		CustomizableUIs[window] = CustomizableUI;

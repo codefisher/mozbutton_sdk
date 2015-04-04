@@ -223,7 +223,6 @@ class RestartlessButton(Button):
         attr_match = re.compile(r'''\b([\w\-]+)="([^"]*)"''', re.DOTALL)
         simple_attrs = {'label', 'tooltiptext', 'id', 'oncommand', 'onclick', 'key', 'class'}
         button_hash, toolbar_template = self._get_toolbar_info()
-        
         for file_name, values in self._button_xul.iteritems():
             jsm_file = []
             js_includes = []
@@ -254,8 +253,8 @@ class RestartlessButton(Button):
             end = []
             menu = self._jsm_create_menu(file_name, values)
             for js_file in set(self._get_js_file_list(file_name) + [file_name]):
-                if self._button_js_setup.get(js_file, {}).get(button_id):
-                    end.append(self._button_js_setup[js_file][button_id])
+                if self._button_js_setup.get(js_file, {}):
+                    end.extend(self._button_js_setup[js_file].values())
             if self._settings.get("menuitems") and menu:
                 end.append("toolbar_buttons.setUpMenuShower();")
             result[file_name] = (template.replace('{{locale-file-prefix}}', self._settings.get("locale_file_prefix"))
