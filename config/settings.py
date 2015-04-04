@@ -78,7 +78,7 @@ config = {
     # controls for the locales
     "default_locale": "en-US",
     "include_local_meta": False,
-    # what is done with strings that are missing, values are replace, skip or empty
+    # what is done with strings that are missing, values are replace, skip, empty or search
     "missing_strings": "replace",
     "locale_file_prefix": "",
 
