@@ -373,6 +373,8 @@ class Button(SimpleButton):
                                 count += 1
                             except IOError:
                                 print "image %s does not exist" % image
+                            except ValueError as e:
+                                print "count not use image:", image, size
                     else:
                         offset = count
                         image_list.append(image)
