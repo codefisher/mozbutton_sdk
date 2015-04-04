@@ -18,8 +18,7 @@ class Locale(object):
             self._missing_strings = local_obj._missing_strings
             self._folders = local_obj._folders
             self._locales = local_obj._locales
-            self._dtd = local_obj._dtd
-            self._properties = local_obj._properties
+            self._strings = local_obj._strings
             self._meta = local_obj._meta
             self._search_data = local_obj._search_data
             return
@@ -27,8 +26,7 @@ class Locale(object):
             self._missing_strings = settings.get("missing_strings")
             self._folders = folders
             self._locales = locales
-            self._dtd = defaultdict(dict)
-            self._properties = defaultdict(dict)
+            self._strings = defaultdict(dict)
             self._meta = {}
             self._search_data = {}
         else:
@@ -59,10 +57,10 @@ class Locale(object):
                     if file_name.endswith("meta.dtd"):
                         self._meta[locale] = file_name
                     dtd = etree.DTD(file_name)
-                    self._dtd[locale].update({entity.name: entity.content for entity in dtd.iterentities()})
+                    self._strings[locale].update({entity.name: entity.content for entity in dtd.iterentities()})
                 elif file_name.endswith(".properties"):
                     with codecs.open(file_name, encoding='utf-8') as data:
-                         self._properties[locale].update({name: value for (name, value) in 
+                         self._strings[locale].update({name: value for (name, value) in
                                     (line.strip().split('=', 1) for line in data if line.strip()) if name})
     def get_meta(self):
         return self._meta.items()
@@ -75,8 +73,8 @@ class Locale(object):
 
         get_dtd_value(str, str) -> str
         """
-        value = self._dtd[locale].get(name,
-                self._dtd[self._settings.get("default_locale")].get(name))
+        value = self._strings[locale].get(name,
+                self._strings[self._settings.get("default_locale")].get(name))
         if not value and button and locale == self._settings.get("default_locale"):
             value = button.get_string(name)
         return value if value else None
@@ -96,6 +94,7 @@ class Locale(object):
         return None
     
     def find_entities(self, string, path):
+        # TODO: user dtd parser
         with codecs.open(path, encoding='utf-8') as data:
             for line in data:
                 match = entity_re.match(line.strip())
@@ -117,10 +116,9 @@ class Locale(object):
                     return value
         return None
     
-    def get_string(self, string, locale=None, table=None, button=None):
+    def get_string(self, string, locale=None, button=None):
         default_locale = self._settings.get("default_locale")
-        if table is None:
-            table = self._dtd
+        table = self._strings
         if self._missing_strings == "replace":
             def fallback():
                 if string in table[default_locale]:
@@ -145,7 +143,7 @@ class Locale(object):
 
     def _dtd_inter(self, strings, button, format, locale):
         for string in strings:
-            value = self.get_string(string, locale, self._dtd, button)
+            value = self.get_string(string, locale, button)
             if value is not None:
                 yield format % (string, value)
 
@@ -169,7 +167,7 @@ class Locale(object):
             strings.append(menu_label)
         for locale in self._locales:
             for string in strings:
-                if self._dtd[locale].get(string):
+                if self._strings[locale].get(string):
                     break
             else:
                 if not untranslated and locale != default:
@@ -187,14 +185,14 @@ class Locale(object):
         for locale in self._locales:
             properties_file = []
             for string in strings:
-                value = self.get_string(string, locale, self._properties, button)
+                value = self.get_string(string, locale, button)
                 if value is not None:
                     properties_file.append("%s=%s" % (string, value))
             if self._settings.get("translate_description"):
                 description = "extensions.%s.description" % self._settings.get("extension_id")
                 if locale == default_locale:
                     properties_file.append("%s=%s" % (description, re.sub(r'[\r\n]+', r'\\n ', self._settings.get("description"))))
-                elif description in self._properties[locale]:
-                    properties_file.append("%s=%s" % (description, self._properties[locale][description]))
+                elif description in self._strings[locale]:
+                    properties_file.append("%s=%s" % (description, self._strings[locale][description]))
             result[locale] = "\n".join(properties_file)
         return result
