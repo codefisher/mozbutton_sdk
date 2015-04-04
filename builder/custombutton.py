@@ -1,4 +1,4 @@
-from build import get_buttons, get_locale_folders, Locale, Button, get_image, bytes_string
+from build import get_buttons, get_locale_folders, Locale, RestartlessButton, get_image, bytes_string
 import os
 import re
 import base64
@@ -17,9 +17,9 @@ CUSTOM_XUL = '''<?xml version="1.0" encoding="UTF-8"?>
   <attributes/>
 </custombutton>'''
 
-class CButton(Button):
+class CButton(RestartlessButton):
     def __init__(self, folders, buttons, settings, applications):
-        Button.__init__(self, folders, buttons, settings, applications)
+        super(CButton, self).__init__(folders, buttons, settings, applications)
         self._description = {}
         self._local = None
         self._interfaces = {}
@@ -79,7 +79,6 @@ class CButton(Button):
         statements, _, children = self._create_dom(root, doc='document')
         statements.pop(-1)
         statements.pop(0)
-        self._button_js_setup
         js_files = self.get_js_files()
         js_data = []
         js_interfaces = []
@@ -155,9 +154,3 @@ def custombutton(config, application, window, locale, button, button_locales=Non
     settings["locale"] = [locale]
     settings["buttons"] = [button]
     return create_custombutton(settings, window, button_locales)
-    
-if __name__ == "__main__":
-    from os import sys, path
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-    from config import settings    
-    print custombutton(config, "browser", "browser", "en-US", "restart-app")
