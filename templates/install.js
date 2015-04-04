@@ -11,7 +11,7 @@
 		let win = wm.getMostRecentWindow("navigator:browser");
 		if(win) {
 			let domWindow = win.QueryInterface(Ci.nsIDOMWindow);
-			domWindow.getBrowser().addTab(url);
+			domWindow.getBrowser().selectedTab = domWindow.getBrowser().addTab(url);
 		} else {
 			var uri = toolbar_buttons.interfaces.IOService.newURI(url, null, null);
 			toolbar_buttons.interfaces.ExternalProtocolService.loadUrl(uri);

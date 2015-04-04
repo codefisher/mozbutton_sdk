@@ -52,7 +52,7 @@ if(!this.load_toolbar_button) {
 				url = "{{homepage_url}}installed/{{version}}/";
 			}
 			try {
-				window.getBrowser().addTab(url);
+				window.getBrowser().selectedTab = window.getBrowser().addTab(url);
 			} catch (e) {
 				var uri = toolbar_buttons.interfaces.IOService.newURI(url, null, null);
 				toolbar_buttons.interfaces.ExternalProtocolService.loadUrl(uri);
