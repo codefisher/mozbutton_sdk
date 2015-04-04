@@ -1,8 +1,9 @@
 from config import settings
-from builder.util import get_button_folders, get_locale_folders, get_folders
+from builder.util import get_button_folders, get_locale_folders, get_folders, apply_settings_files
 from builder.locales import Locale
 from collections import defaultdict
 import os
+import sys
 import re
 
 entity_re = re.compile(r"<!ENTITY\s+([\w\-\.]+?)\s+[\"'](.*?)[\"']\s*>")
@@ -47,7 +48,9 @@ def find_string(strings, folder):
             get_properties(strings, path)
     
 def main():
-    config = settings.config
+    args = sys.argv[1:]
+    config = dict(settings.config)
+    apply_settings_files(config, args)
     config["locale"] = "en-US"
     locale_folders, locales = get_locale_folders(config.get("locale"), config)
     button_locales = Locale(config, locale_folders, locales, all_files=True)
@@ -59,6 +62,7 @@ def main():
             strings[value].append(key)    
     find_string(strings, os.path.join("app_locale", "en-US"))
     
-main()
+if __name__ == "__main__":
+    main()
 
 # python find_app_string.py | sort > app_locale/data
