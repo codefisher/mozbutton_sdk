@@ -71,7 +71,7 @@ class CButton(RestartlessButton):
         return '"%s"' % result.replace("&amp;", "&").replace("&apos;", "'")
         
     def _prop_string_lookup(self, value):
-        return '"%s"' % self._local.get_string(value, self._local.get_locales()[0], table=self._local._properties)
+        return '"%s"' % self._local.get_string(value, self._local.get_locales()[0])
     
     def get_init(self, window):
         xul = self._button_xul[window][self._the_button]
