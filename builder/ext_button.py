@@ -45,6 +45,7 @@ class Button(SimpleButton):
         # we always want these file
         self._button_js["loader"]["_"] = ""
         self._button_js["button"]["_"] = ""
+        self._included_js_files = []
 
         for folder, button, files in self._info:
             for file_name in (self._window_files + self._app_files):
@@ -591,6 +592,7 @@ class Button(SimpleButton):
             self._has_javascript = True
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "loader.js"), "r") as loader:
                 js_files["loader"] = loader.read()
+        self._included_js_files = js_files.keys()
         return js_files
 
     def get_properties_strings(self):

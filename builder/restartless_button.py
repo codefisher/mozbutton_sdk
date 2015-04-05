@@ -227,7 +227,7 @@ class RestartlessButton(Button):
             jsm_file = []
             js_includes = []
             for js_file in self._get_js_file_list(file_name):
-                if js_file != "loader":
+                if js_file != "loader" and js_file in self._included_js_files:
                     js_includes.append("""loader.loadSubScript("chrome://%s/content/%s.js", scope);""" % (self._settings.get("chrome_name"), js_file))
             toolbars, toolbar_ids = self._create_jsm_toolbar(button_hash, toolbar_template, file_name, values)
             count = 0
