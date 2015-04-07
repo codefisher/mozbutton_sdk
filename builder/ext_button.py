@@ -3,6 +3,7 @@ import re
 import io
 import math
 import hashlib
+import codecs
 from collections import defaultdict
 import grayscale
 from util import get_pref_folders
@@ -296,7 +297,12 @@ class Button(SimpleButton):
     def get_css_file(self, toolbars=None):
         image_list = []
         image_datas = {}
-        lines = ["""@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");"""]
+        style_file = os.path.join(self._settings.get("project_root"), "files", "button.css")
+        if not os.path.isfile(style_file):
+            style_file = os.path.join(self._settings.get('button_sdk_root'), "templates", "button.css")
+        with codecs.open(style_file,"r", encoding='utf-8') as f:
+            template = f.read()
+        lines = [template]
         values = {"chrome_name": self._settings.get("chrome_name")}
         #small, large = self._settings.get("icon_size")
         icon_sizes = self.get_icon_size()

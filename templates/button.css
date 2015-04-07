@@ -1,0 +1,6 @@
+@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+
+/* fixes a stupid display problem with toolbarbutton[type="menu"] elements
+#customization-container toolbarpaletteitem dropmarker {
+    display:none;
+}
