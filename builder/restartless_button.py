@@ -58,7 +58,7 @@ class RestartlessButton(Button):
             var_name = "menupopup_%s" % num
             num += 1
             item.attrib["insertafter"] = insert_after
-            item_statements, count, _ = self._create_dom(item, top=var_name, count=num, doc="document")
+            item_statements, count, _ = self._create_dom(item, top=var_name, count=num)
             num += count
             statements.extend(item_statements)
         return "\n\t".join(statements)
@@ -74,7 +74,7 @@ class RestartlessButton(Button):
         else:
             return "buttonStrings.get('%s')" % value
 
-    def _create_dom(self, root, top=None, count=0, doc='doc', child_parent=None, rename=None, append_children=True):
+    def _create_dom(self, root, top=None, count=0, doc='document', child_parent=None, rename=None, append_children=True):
         num = count
         if rename == None:
             rename = {}
@@ -143,23 +143,24 @@ class RestartlessButton(Button):
         if 'viewid' in root.attrib:
             self._ui_ids.add(root.attrib["viewid"])
             statements, _, children = self._create_dom(root, child_parent="popupset", append_children=False)
-            children[0] = """var popupset = doc.getElementById('PanelUI-multiView');
+            children[0] = """var popupset = document.getElementById('PanelUI-multiView');
 			if(popupset) {
-				var menupopup_1 = doc.createElement('panelview');
+				var menupopup_1 = document.createElement('panelview');
 			} else {
-			    var menupopup_1 = doc.createElement('menupopup');
-				popupset = doc.documentElement;
+			    var menupopup_1 = document.createElement('menupopup');
+				popupset = document.documentElement;
 			}"""
             data = {
                 "type": "'view'",
-                "onBeforeCreated": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(children),
+                "onBeforeCreated": 'function (document) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(children),
             }
         else:
             statements, _, _ = self._create_dom(root)
             data = {
                 "type": "'custom'",
-                "onBuild": 'function (doc) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(statements)
+                "onBuild": 'function (document) {\n\t\t\tvar window = document.defaultView;\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(statements)
             }
+        self._apply_toolbox(file_name, data)
         toolbar_max_count = self._settings.get("buttons_per_toolbar")
         if add_to_main_toolbar and button_id in add_to_main_toolbar:
             data['defaultArea'] = "'%s'" % self._settings.get('file_to_main_toolbar').get(file_name)
@@ -177,20 +178,43 @@ class RestartlessButton(Button):
             elif key == 'viewid':
                 data["viewId"] = "'%s'" % value
             elif key == 'onviewshowing':
-                data["onViewShowing"] = "function(event){\n\t\t\t%s\n\t\t}" % value
+                data["onViewShowing"] = "function(event){\n\t\t\t%s\n\t\t}" % self._patch_call(value)
             elif key == 'onviewhideing':
-                data["onViewHiding"] = "function(event){\n\t\t\t%s\n\t\t}" % value
+                data["onViewHiding"] = "function(event){\n\t\t\t%s\n\t\t}" % self._patch_call(value)
         for js_file in self._get_js_file_list(file_name):
             if self._button_js_setup.get(js_file, {}).get(button_id):
                 data["onCreated"] = "function(aNode){\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
         items = sorted(data.items(), key=self._attr_key)
         return "\tCustomizableUI.createWidget({\n\t\t%s\n\t});" % ",\n\t\t".join("%s: %s" % (key, value) for key, value in items)
 
+    def _apply_toolbox(self, file_name, data):
+        toolbox_info = self._settings.get("file_to_toolbar_box2").get(file_name)
+        if toolbox_info:
+            window_file, toolbox_id = toolbox_info
+            data["toolbox"] = "'%s'" % toolbox_id
+            if window_file:
+                data["window"] = "'%s'" % window_file
+
+
+    def _patch_call(self, value):
+        data = []
+        if re.match(r'\bthis\b', value):
+            value = re.sub('\bthis\b', 'aThis', value)
+            data.append("var aThis = event.target;")
+        if re.match(r'\bdocument\b', value):
+            data.append("var document = event.target.ownerDocument;")
+        if re.match(r'\bwindow\b', value):
+            data.append("var window = event.target.ownerDocument.defaultView;")
+        data.append(value)
+        return "\n\t\t\t".join(data)
+
+
 
     def _create_jsm_button(self, file_name, toolbar_ids, count, button_id, attr):
         toolbar_max_count = self._settings.get("buttons_per_toolbar")
         add_to_main_toolbar = self._settings.get("add_to_main_toolbar")
         data = {}
+        self._apply_toolbox(file_name, data)
         if add_to_main_toolbar and button_id in add_to_main_toolbar:
             data['defaultArea'] = "'%s'" % self._settings.get('file_to_main_toolbar').get(file_name)
         elif self._settings.get("put_button_on_toolbar"):
@@ -206,8 +230,7 @@ class RestartlessButton(Button):
                 if key == 'oncommand':
                     self._button_commands[file_name][button_id] = value
                 key = 'onCommand' if key == 'oncommand' else 'onClick'
-                this = 'var aThis = event.target;\n\t\t\t' if 'this' in value else ''
-                data[key] = "function(event) {\n\t\t\t%s%s\n\t\t}" % (this, value.replace('this', 'aThis'))
+                data[key] = "function(event) {\n\t\t\t%s\n\t\t}" % self._patch_call(value)
         for js_file in self._get_js_file_list(file_name):
             if self._button_js_setup.get(js_file, {}).get(button_id):
                 data["onCreated"] = "function(aNode) {\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
@@ -286,8 +309,7 @@ class RestartlessButton(Button):
                 continue
             toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
             toolbox = '\n<%s id="%s">\n%s\n</%s>' % (toolbar_node, toolbar_box, '\n'.join(toolbars), toolbar_node)
-            statements, count, _ = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', toolbox)), count=num,
-                                                    doc="document")
+            statements, count, _ = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', toolbox)), count=num)
             count += 1
             statements.pop(-1)
             statements.pop(1)
