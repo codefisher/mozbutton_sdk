@@ -24,7 +24,7 @@ def main():
 
     ext_info = {
         "version": "1.0",
-        "projects": "buttons",
+        "projects": ["buttons"],
         "buttons": "all",
         "translate_description": True,
         "restartless": True,
@@ -35,7 +35,7 @@ def main():
     simple_name = re.sub(r"[^a-zA-Z]+", '_', name).lower()
     ext_info["name"] = name
     ext_info["chrome_name"] = simple_name
-    ext_info["pref_root"] = "extensions.%s" % simple_name
+    ext_info["pref_root"] = "extensions.%s." % simple_name
     ext_id = raw_input("Extension ID (leave blank to have one generated): ")
     if ext_id:
         ext_info["extension_id"] = ext_id
@@ -65,6 +65,8 @@ def main():
         except ValueError:
             pass
     ext_info["applications"] = apps
+
+    #TODO: ask for path of icon file, and copy to files/icon.png
 
     with open(os.path.join(path, "%s.json" % simple_name), 'w+') as fp:
         json.dump(ext_info, fp, indent=4, separators=(',', ': '))
