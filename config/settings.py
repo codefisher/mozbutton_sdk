@@ -134,7 +134,7 @@ config = {
         "read": ("chrome://messenger/content/messageWindow.xul", ),
         "calendar": ("chrome://calendar/content/calendar.xul", "chrome://sunbird/content/calendar.xul"),
         "lightning": ("chrome://messenger/content/messenger.xul", ),
-        "mail-header": ("chrome://messenger/content/messenger.xul",),
+        "mail-header": ("chrome://messenger/content/messenger.xul", "chrome://messenger/content/messageWindow.xul"),
         "mail-address-book": ("chrome://messenger/content/addressbook/addressbook.xul", )
     },
     "file_to_application": {
