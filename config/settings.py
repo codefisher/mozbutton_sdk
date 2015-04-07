@@ -202,6 +202,16 @@ config = {
         #"calendar": "",
         "suite_browser": ("window", "main-window"), 
     },
+    # the default value is navigator-toolbox (for the browser) so they are not added
+    "file_to_toolbar_box2": {
+        "mail": ("messenger.xul", "mail-toolbox"),
+        "compose": (None, "compose-toolbox"),
+        "read": ("messageWindow.xul", "mail-toolbox"),
+        "calendar": (None, "calendar-toolbox"),
+        "lightning": (None, "calendar-toolbox"),
+        "mail-header": (None, "header-view-toolbox"),
+        "mail-address-book": (None, "ab-toolbox"),
+    },
     "file_to_main_toolbar": {
         "browser": "nav-bar",
         "mail": "mail-bar3",

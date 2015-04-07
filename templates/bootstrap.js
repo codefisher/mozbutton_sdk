@@ -22,6 +22,7 @@ function loadIntoWindow(window) {
 		try {
 			for(var i = 0; i < modules.length; i++) {
 				var mod = Cu.import(modules[i]);
+				mod.setupButtons();
 				mod.loadButtons(window);
 			}
 		} catch(e) {
