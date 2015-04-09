@@ -34,12 +34,14 @@ this.CustomizableUI = {
 				button.parentNode.removeChild(button);
 			} else {
 				var toolboxes = document.getElementsByTagName('toolbox');
-				for(var t = 0; t < toolbars.length; t++) {
-					var toolbox = toolboxes[i];
-					var buttons = toolbox.palette.getElementsByAttribute('id', aWidgetId);
-					for (var i = 0; i < buttons.length; i++) {
-						toolbox.palette.removeChild(buttons[i]);
-					}
+				for(var t = 0; t < toolboxes.length; t++) {
+					try {
+						var toolbox = toolboxes[i];
+						var buttons = toolbox.palette.getElementsByAttribute('id', aWidgetId);
+						for (var i = 0; i < buttons.length; i++) {
+							toolbox.palette.removeChild(buttons[i]);
+						}
+					} catch(e) {}
 				}
 			}
 		});
@@ -60,6 +62,9 @@ this.CustomizableUI = {
 		// we are not yet handeling aPosition
 		callWithEachWindow(function (win) {
 			let document = win.document;
+			if(!document) {
+				return;
+			}
 			var toolbar = document.getElementById(aArea);
 			if(!toolbar) {
 				return;
@@ -278,6 +283,9 @@ function restoreToToolbar(toolbox, aWidgetId) {
 
 function addWidgetToWindow(window, aProperties) {
 	let document = window.document;
+	if(!document) {
+		return;
+	}
 	if(aProperties.toolbox) {
 		var toolboxId = aProperties.toolbox;
 	} else {
@@ -357,6 +365,9 @@ function addWidgetToWindow(window, aProperties) {
 function addWidgetToArea(window, aWidgetId, aArea, aPosition) {
 	// we are not yet handeling aPosition
 	let document = window.document;
+	if(!document) {
+		return;
+	}
 	var toolbar = document.getElementById(aArea);
 	if(!toolbar) {
 		return;
@@ -367,6 +378,9 @@ function addWidgetToArea(window, aWidgetId, aArea, aPosition) {
 
 function registerAreaForWindow(win, aName, aProperties) {
 	let document = win.document;
+	if(!document) {
+		return;
+	}
 	var toolbar = document.getElementById(aName);
 	if(!toolbar) {
 		return;
