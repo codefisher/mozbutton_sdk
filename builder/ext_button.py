@@ -155,7 +155,7 @@ class Button(SimpleButton):
         if self._settings.get("menuitems"):
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "showmenu-option.xul"), "r") as menu_option_file:
                 menu_option_tempate = menu_option_file.read() 
-            if self._settings.get("as_submenu") and self._settings.get("menu_meta"):
+            if self._settings.get("menu_placement") is None and self._settings.get("menu_meta"):
                 menu_id, menu_label, location = self._settings.get("menu_meta")
                 self._button_options[menu_id] = ("tb-show-a-menu.option.title:menu.png", 
                         menu_option_tempate.replace("{{menu_id}}", menu_id).replace("{{menu_label}}", menu_label))
