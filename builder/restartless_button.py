@@ -69,8 +69,9 @@ class RestartlessButton(Button):
             name, sep, other = value.partition(' ')
             other = " + '%s%s'" % (sep, other) if sep else ""
             return "buttonStrings.get('%s')%s" % (name, other)
-        elif "&brandShortName;" in value:
-            return "buttonStrings.get('%s'.replace('&brandShortName;', Cc['@mozilla.org/xre/app-info;1'].createInstance(Ci.nsIXULAppInfo).name))" % value
+        # for this to work we would need to look up the string and search in it, not its name
+        #elif "brandShortName" in value:
+        #    return "buttonStrings.get('%s'.replace('&brandShortName;', Cc['@mozilla.org/xre/app-info;1'].createInstance(Ci.nsIXULAppInfo).name))" % value
         else:
             return "buttonStrings.get('%s')" % value
 
@@ -100,8 +101,7 @@ class RestartlessButton(Button):
                 if key == 'oncommand' and self._settings.get("custom_button_mode") and top == None:
                     self._command = value
                 else:
-                    this = 'var aThis = event.target;\n\t\t\t\t' if 'this' in value else ''
-                    statements.append("%s_%s.addEventListener('%s', function(event) {\n\t\t\t\t%s%s\n\t\t\t}, false);" % (root.tag, num, key[2:], this, value.replace('this', 'aThis')))
+                    statements.append("%s_%s.addEventListener('%s', function(event) {\n\t\t\t\t%s\n\t\t\t}, false);" % (root.tag, num, key[2:], self._patch_call(value)))
             elif key == "insertafter":
                 pass
             elif key == "showamenu":
@@ -183,7 +183,7 @@ class RestartlessButton(Button):
                 data["onViewHiding"] = "function(event){\n\t\t\t%s\n\t\t}" % self._patch_call(value)
         for js_file in self._get_js_file_list(file_name):
             if self._button_js_setup.get(js_file, {}).get(button_id):
-                data["onCreated"] = "function(aNode){\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
+                data["onCreated"] = "function(aNode){\n\t\t\tvar document = aNode.ownerDocument;\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
         items = sorted(data.items(), key=self._attr_key)
         return "\tCustomizableUI.createWidget({\n\t\t%s\n\t});" % ",\n\t\t".join("%s: %s" % (key, value) for key, value in items)
 
@@ -198,12 +198,12 @@ class RestartlessButton(Button):
 
     def _patch_call(self, value):
         data = []
-        if re.match(r'\bthis\b', value):
-            value = re.sub('\bthis\b', 'aThis', value)
+        if re.search(r'\bthis\b', value):
+            value = re.sub(r'\bthis\b', 'aThis', value)
             data.append("var aThis = event.target;")
-        if re.match(r'\bdocument\b', value):
+        if re.search(r'\bdocument\b', value):
             data.append("var document = event.target.ownerDocument;")
-        if re.match(r'\bwindow\b', value):
+        if re.search(r'\bwindow\b', value):
             data.append("var window = event.target.ownerDocument.defaultView;")
         data.append(value)
         return "\n\t\t\t".join(data)
@@ -233,7 +233,7 @@ class RestartlessButton(Button):
                 data[key] = "function(event) {\n\t\t\t%s\n\t\t}" % self._patch_call(value)
         for js_file in self._get_js_file_list(file_name):
             if self._button_js_setup.get(js_file, {}).get(button_id):
-                data["onCreated"] = "function(aNode) {\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
+                data["onCreated"] = "function(aNode) {\n\t\t\tvar document = aNode.ownerDocument;\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
         items = sorted(data.items(), key=self._attr_key)
         result = "\tCustomizableUI.createWidget({\n\t\t%s\n\t});" % ",\n\t\t".join("%s: %s" % (key, value) for (key, value) in items)
         return result
@@ -279,7 +279,7 @@ class RestartlessButton(Button):
                 if self._button_js_setup.get(js_file, {}):
                     end.extend(self._button_js_setup[js_file].values())
             if self._settings.get("menuitems") and menu:
-                end.append("toolbar_buttons.setUpMenuShower();")
+                end.append("toolbar_buttons.setUpMenuShower(document);")
             result[file_name] = (template.replace('{{locale-file-prefix}}', self._settings.get("locale_file_prefix"))
                         .replace('{{modules}}', modules_import)
                         .replace('{{scripts}}', "\n\t".join(js_includes))
@@ -294,7 +294,7 @@ class RestartlessButton(Button):
                         .replace('{{end}}', "\n\t".join(end))
                         .replace('{{buttons}}', "\n\n".join(jsm_file))
                         .replace('{{pref_root}}', self._settings.get("pref_root"))
-                        .replace('{{chrome-name}}', self._settings.get("chrome_name")))
+                        .replace('{{chrome_name}}', self._settings.get("chrome_name")))
         return result
     
     def _create_jsm_toolbar(self, button_hash, toolbar_template, file_name, values):

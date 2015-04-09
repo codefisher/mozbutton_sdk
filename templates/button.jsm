@@ -7,7 +7,7 @@ var EXPORTED_SYMBOLS = ["loadButtons", "unloadButtons", "setupButtons"];
 try {
 	Cu.import("resource:///modules/CustomizableUI.jsm");
 } catch(e) {
-	Cu.import("chrome://{{chrome-name}}/content/customizable.jsm");
+	Cu.import("chrome://{{chrome_name}}/content/customizable.jsm");
 }
 
 Cu.import('resource://gre/modules/Services.jsm');
@@ -38,7 +38,7 @@ var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getService(Ci.mozIJSSub
 var gScope = this;
 var gSetup = false;
 // the number at the end forces a reload of the properties file, since sometimes it it catched when we don't want
-var buttonStrings = new StringBundle("chrome://{{chrome-name}}/locale/{{locale-file-prefix}}button_labels.properties?time=" + Date.now().toString());
+var buttonStrings = new StringBundle("chrome://{{chrome_name}}/locale/{{locale-file-prefix}}button_labels.properties?time=" + Date.now().toString());
 
 function setupButtons() {
 	if(!gSetup) {
@@ -120,13 +120,14 @@ function observeToolbar(window, document, toolbar_id) {
 	var prefs = Cc['@mozilla.org/preferences-service;1'].getService(Ci.nsIPrefService)
 			.getBranch("{{pref_root}}" + 'toolbar_status.' + toolbar_id + '.');
 	var toolbar = document.getElementById(toolbar_id);
-	var mutationObserver = new window.MutationObserver(function(mutations) {
+	var observer = function(mutations) {
 		mutations.forEach(function(mutation) {
 			if(mutation.attributeName && (CustomizableUI.shim || mutation.attributeName != 'currentset')) {
 				prefs.setCharPref(mutation.attributeName, toolbar.getAttribute(mutation.attributeName));
 			}
 		});
-	});
+	}
+	var mutationObserver = new window.MutationObserver(observer);
 	var attrList = prefs.getChildList('', {});
 	for(var i in attrList) {
 		toolbar.setAttribute(attrList[i], prefs.getCharPref(attrList[i]));

@@ -63,7 +63,7 @@ class OverlayButton(Button):
             xul_file = (template.replace("{{buttons}}", "\n  ".join(values.values()))
                                 .replace("{{script}}", "\n ".join(js_includes))
                                 .replace("{{keyboard_shortcut}}", self.get_keyboard_shortcuts(file_name))
-                                .replace("{{chrome-name}}", self._settings.get("chrome_name"))
+                                .replace("{{chrome_name}}", self._settings.get("chrome_name"))
                                 .replace("{{locale_file_prefix}}", self._settings.get("locale_file_prefix"))
                                 .replace("{{toolbars}}", toolbars)
                                 .replace("{{palette}}", self._settings.get("file_to_palette").get(file_name, ""))

@@ -3,7 +3,7 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
-var styleSheets = [Services.io.newURI("chrome://{{chrome-name}}/skin/button.css", null, null)];
+var styleSheets = [Services.io.newURI("chrome://{{chrome_name}}/skin/button.css", null, null)];
 
 function getModules(uri) {
 	var modules = [];
@@ -19,14 +19,14 @@ function loadIntoWindow(window) {
 		for (var i = 0, len = styleSheets.length; i < len; i++) {
 			window.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils).loadSheet(styleSheets[i], 1);
 		}
-		try {
-			for(var i = 0; i < modules.length; i++) {
+		for(var i = 0; i < modules.length; i++) {
+			try {
 				var mod = Cu.import(modules[i]);
 				mod.setupButtons();
 				mod.loadButtons(window);
+			} catch(e) {
+				window.console.log(e);
 			}
-		} catch(e) {
-			window.console.log(e);
 		}
 	}
 	if(uri == 'chrome://global/content/customizeToolbar.xul') {
@@ -43,14 +43,14 @@ function unloadFromWindow(window) {
 		for (let i = 0, len = styleSheets.length; i < len; i++) {
 			window.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils).removeSheet(styleSheets[i], 1);
 		}
-		try {
-			for(var i = 0; i < modules.length; i++) {
+		for(var i = 0; i < modules.length; i++) {
+			try {
 				var mod = Cu.import(modules[i]);
 				mod.unloadButtons(window);
 				Cu.unload(modules[i]); // makes next call to import get a new object
+			} catch(e) {
+				window.console.log(e);
 			}
-		} catch(e) {
-			window.console.log(e);
 		}
 	}
 	if(uri == 'chrome://global/content/customizeToolbar.xul') {
@@ -82,7 +82,7 @@ function createResource(resourceName, uriPath) {
 function startup(data, reason) {
 	// set our default prefs
 	try {
-		Services.scriptloader.loadSubScript("chrome://{{chrome-name}}/content/defaultprefs.js", {pref: setDefaultPref});
+		Services.scriptloader.loadSubScript("chrome://{{chrome_name}}/content/defaultprefs.js", {pref: setDefaultPref});
 	} catch(e) {}
 	
 	{{resource}}
@@ -106,7 +106,7 @@ function shutdown(data, reason) {
 	}
 
 	let resource = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
-	resource.setSubstitution("{{chrome-name}}", null);
+	resource.setSubstitution("{{chrome_name}}", null);
 
 	let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
  
@@ -119,7 +119,7 @@ function shutdown(data, reason) {
 		let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
 		unloadFromWindow(domWindow);
 	}
-	Cu.unload("chrome://{{chrome-name}}/content/customizable.jsm");
+	//Cu.unload("chrome://{{chrome_name}}/content/customizable.jsm");
 }
 
 function install(data, reason) {

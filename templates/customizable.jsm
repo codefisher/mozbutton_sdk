@@ -43,10 +43,16 @@ this.CustomizableUI = {
 				}
 			}
 		});
+		var old = [];
 		for (let aProperties of gWidgets) {
 			if(aProperties.id == aWidgetId) {
-				gWidgets.delete(aProperties);
+				old.push(aProperties);
 			}
+		}
+		for(var i = 0; i < old.length; i++) {
+			try {
+				gWidgets.delete(old[i]);
+			} catch(e) {}
 		}
 	},
 
@@ -74,7 +80,9 @@ this.CustomizableUI = {
 	},
 
 	unregisterArea: function (aName, aDestroyPlacements) {
-		gAreas.delete(aName);
+		try {
+			gAreas.delete(aName);
+		} catch(e) {}
 	},
 
 	addListener: function(aListener) {
@@ -390,17 +398,24 @@ function callWithEachWindow(func) {
 	let windows = wm.getEnumerator(null);
 	while (windows.hasMoreElements()) {
 		let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
-		func(domWindow);
+		try {
+			func(domWindow);
+		} catch(e) {
+			domWindow.console.log(e);
+		}
 	}
 }
 
 var windowListener = {
+	ci: Components.interfaces,
+	hwl: handelWindowLoad,
 	onOpenWindow: function(aWindow) {
 		// Wait for the window to finish loading
-		let domWindow = aWindow.QueryInterface(Components.interfaces.nsIInterfaceRequestor).getInterface(Components.interfaces.nsIDOMWindowInternal || Components.interfaces.nsIDOMWindow);
+		var self = this;
+		let domWindow = aWindow.QueryInterface(this.ci.nsIInterfaceRequestor).getInterface(this.ci.nsIDOMWindowInternal || this.ci.nsIDOMWindow);
 		domWindow.addEventListener("load", function onLoad() {
 			domWindow.removeEventListener("load", onLoad, false);
-			handelWindowLoad(domWindow);
+			self.hwl(domWindow);
 		}, false);
 	},
 	onCloseWindow: function(aWindow) {},

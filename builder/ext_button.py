@@ -149,7 +149,7 @@ class Button(SimpleButton):
             javascript = ""
         with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "option.xul"), "r") as overlay_window_file:
             overlay_window = (overlay_window_file.read()
-                       .replace("{{chrome-name}}", self._settings.get("chrome_name"))
+                       .replace("{{chrome_name}}", self._settings.get("chrome_name"))
                        .replace("{{locale_file_prefix}}", self._settings.get("locale_file_prefix"))
                        .replace("{{javascript}}", javascript))
         if self._settings.get("menuitems"):
@@ -392,13 +392,14 @@ class Button(SimpleButton):
                     if size is None:
                         continue
                     if name == "small":
-                        selectors[size].append("toolbar[iconsize='small'] #%s%s" % (button, modifier))
+                        selectors[size].append("toolbar[iconsize='small'] toolbarbutton#%s%s" % (button, modifier))
                     elif name == "large":
-                        selectors[size].append("toolbar #%s%s" % (button, modifier))
+                        selectors[size].append("toolbar toolbarbutton#%s%s" % (button, modifier))
                     elif name == "menu":
-                        selectors[size].append("#%s-menu-item%s" % (button, modifier))
+                        selectors[size].append("menu#%s-menu-item%s" % (button, modifier))
+                        selectors[size].append("menuitem#%s-menu-item%s" % (button, modifier))
                     elif name == "window":
-                        selectors[size].append("#%s%s" % (button, modifier))
+                        selectors[size].append("toolbarbutton#%s%s" % (button, modifier))
                 if self._settings.get("merge_images"):
                     for size in icon_size_set:
                         if size is not None:
@@ -407,16 +408,16 @@ class Button(SimpleButton):
                             left, top, right, bottom = box_cmp(image_map_x[size], offset)
                             values.update({"top": top, "left": left, "bottom": bottom, "right": right})
                             lines.append("""%(selectors)s {"""
-                                     """\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/button.png") !important;"""
-                                     """\n\t-moz-image-region: rect(%(top)spx %(right)spx %(bottom)spx %(left)spx) !important;\n}""" % values)
+                                     """\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/button.png");"""
+                                     """\n\t-moz-image-region: rect(%(top)spx %(right)spx %(bottom)spx %(left)spx);\n}""" % values)
                 else:
                     values["image"] = image
                     for size in icon_size_set:
                         if size is not None:
                             values["size"] = size
                             values["selectors"] = ", ".join(selectors[size])   
-                            lines.append("""%(selectors)s {\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/%(image)s") !important;"""
-                                     """\n\t-moz-image-region: rect(0px %(size)spx %(size)spx 0px) !important;\n}""" % values)
+                            lines.append("""%(selectors)s {\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/%(image)s");"""
+                                     """\n\t-moz-image-region: rect(0px %(size)spx %(size)spx 0px);\n}""" % values)
         if self._settings.get("merge_images"):
             for size in icon_size_set:
                 if size is not None:
@@ -431,7 +432,7 @@ class Button(SimpleButton):
                                    ('window', '.toolbar-buttons-toolbar-toggle')):
                 if icon_sizes[name] is not None:
                     lines.append(('''%(selector)s {'''
-                    '''\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/toolbar-button.png") !important;'''
+                    '''\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/toolbar-button.png");'''
                     '''\n}''') % {"size": icon_sizes[name], "selector": selector,
                        "chrome_name": self._settings.get("chrome_name")})
         for item in set(self._button_style.values()):
@@ -484,7 +485,7 @@ class Button(SimpleButton):
                 if value:
                     self._button_js_setup[file_name][button_id] = value
             if self._settings.get("menuitems"):
-                self._button_js_setup[file_name]["_menu_hider"] = "toolbar_buttons.setUpMenuShower();"
+                self._button_js_setup[file_name]["_menu_hider"] = "toolbar_buttons.setUpMenuShower(document);"
         shared = []
         lib_folder = os.path.join(self._settings.get("project_root"), "files", "lib")
         for file_name in os.listdir(lib_folder):

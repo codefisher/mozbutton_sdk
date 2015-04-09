@@ -101,7 +101,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     if settings.get('restartless'):
         dtd_data = button_locales.get_dtd_data(buttons.get_locale_strings(), buttons, untranslated=False, format="%s=%s")
         for locale, data in dtd_data.iteritems():
-            data = data.replace("&amp;", "&").replace("&apos;", "'").replace("&quot;", '"')
+            data = data.replace("&amp;", "&").replace("&apos;", "'").replace("&quot;", '"').replace("&brandShortName;", '')
             xpi.writestr(os.path.join("chrome", "locale", locale, "%sbutton_labels.properties" % locale_prefix), bytes_string(data))
     else:
         dtd_data = button_locales.get_dtd_data(buttons.get_locale_strings(), buttons, untranslated=False)
@@ -125,7 +125,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     for name, path in buttons.get_extra_files().iteritems():
         with codecs.open(path, encoding='utf-8') as fp:
             xpi.writestr(os.path.join("chrome", "content", "files", name), 
-                         bytes_string(fp.read().replace("{{chrome-name}}", settings.get("chrome_name"))
+                         bytes_string(fp.read().replace("{{chrome_name}}", settings.get("chrome_name"))
                             .replace("{{locale_file_prefix}}", settings.get("locale_file_prefix"))))
     resources = buttons.get_resource_files()
     has_resources = bool(resources)
@@ -215,7 +215,7 @@ def create_bootstrap(settings, buttons, has_resources):
                                .replace("{{version}}", settings.get("version"))
                                .replace("{{pref_root}}", settings.get("pref_root"))
                                .replace("{{current_version_pref}}", settings.get("current_version_pref")))
-    return (template.replace("{{chrome-name}}", settings.get("chrome_name"))
+    return (template.replace("{{chrome_name}}", settings.get("chrome_name"))
                     .replace("{{resource}}", resource)
                     .replace("{{install}}", install)
                     .replace("{{loaders}}", "if" + " else if".join(loaders)))
@@ -300,7 +300,7 @@ def create_install(settings, applications, options=[]):
                     .replace("{{version}}", settings.get("version"))
                     .replace("{{description}}", settings.get("description"))
                     .replace("{{creator}}", settings.get("creator"))
-                    .replace("{{chrome-name}}", settings.get("chrome_name"))
+                    .replace("{{chrome_name}}", settings.get("chrome_name"))
                     .replace("{{homepageURL}}", settings.get("homepage"))
                     .replace("{{optionsURL}}", options_url)
                     .replace("{{bootstrap}}", bootstrap)
