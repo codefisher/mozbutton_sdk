@@ -51,15 +51,15 @@ class RestartlessButton(Button):
             num += 3
             for item, _, _ in in_submenu.values():
                 item_statements, count, _ = self._create_dom(item, top="menupopup_2", count=num, doc="document")
-                num += count
+                num = count + 1
                 statements.extend(item_statements)
         for item, menu_name, insert_after in in_menu.values():
             statements.append("var menupopup_%s = document.getElementById('%s');" % (num, menu_name))
             var_name = "menupopup_%s" % num
             num += 1
             item.attrib["insertafter"] = insert_after
-            item_statements, count, _ = self._create_dom(item, top=var_name, count=num)
-            num += count
+            item_statements, num, _ = self._create_dom(item, top=var_name, count=num)
+            num = count + 1
             statements.extend(item_statements)
         return "\n\t".join(statements)
     
