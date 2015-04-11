@@ -683,6 +683,12 @@ class Button(SimpleButton):
             result = {button: menu_placement for button in buttons}
         return result
 
+    def toolbar_count(self, include_setting, values, max_count):
+        number = self._settings.get(include_setting)
+        if number == -1:
+            number = int(math.ceil(float(len(values)) / max_count))
+        return number
+
     def _create_toolbar(self, button_hash, toolbar_template, file_name, values):
         toolbar_ids = []
         tool_bars = []
@@ -690,15 +696,13 @@ class Button(SimpleButton):
         if file_name in self._settings.get("extra_toolbars_disabled"):
             return tool_bars, bottom_bars, toolbar_ids
         count = 0
+        max_count = self._settings.get("buttons_per_toolbar")
+        buttons = values.keys()
         for box_setting, include_setting, toolbars in [("file_to_toolbar_box", "include_toolbars", tool_bars),
                                                        ("file_to_bottom_box", "include_satusbars", bottom_bars)]:
             toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
             if self._settings.get(include_setting) and toolbar_box:
-                number = self._settings.get(include_setting)
-                max_count = self._settings.get("buttons_per_toolbar")
-                if number == -1:
-                    number = int(math.ceil(float(len(values)) / max_count))
-                buttons = values.keys()
+                number = self.toolbar_count(include_setting, values, max_count)
                 defaultset = ""
                 for i in range(number):
                     if self._settings.get("put_button_on_toolbar"):
@@ -707,7 +711,7 @@ class Button(SimpleButton):
                     hash = button_hash.hexdigest()[:6]
                     label_number = "" if (number + count) == 1 else " %s" % (i + count + 1)
                     toolbar_ids.append("tb-toolbar-%s" % hash)
-                    toolbar_box_id = "" if include_setting == "include_toolbars" else 'toolboxid="%s" ' % self._settings.get(box_setting).get(file_name)[1]
+                    toolbar_box_id = "" if include_setting == "include_toolbars" else 'toolboxid="%s" ' % toolbar_box
                     toolbars.append('''<toolbar %spersist="collapsed,hidden" context="toolbar-context-menu" class="toolbar-buttons-toolbar chromeclass-toolbar" id="tb-toolbar-%s" mode="icons" iconsize="small" customizable="true" %s toolbarname="&tb-toolbar-buttons-toggle-toolbar.name;%s"/>''' % (toolbar_box_id, hash, defaultset, label_number))
                     values["tb-toolbar-buttons-toggle-toolbar-%s" % hash] = toolbar_template.replace("{{hash}}", hash).replace("{{ number }}", label_number)
                 count += number
@@ -730,7 +734,7 @@ class Button(SimpleButton):
         button_hash = None
         toolbar_template = None
         if self._settings.get("include_toolbars") or self._settings.get("include_satusbars"):
-            with open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'toolbar-toggle.xul')) as template_file:
+            with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'toolbar-toggle.xul'), encoding='utf-8') as template_file:
                 toolbar_template = template_file.read()
             button_hash = hashlib.md5(self._settings.get('extension_id'))
         return button_hash, toolbar_template

@@ -58,7 +58,7 @@ class RestartlessButton(Button):
             var_name = "menupopup_%s" % num
             num += 1
             item.attrib["insertafter"] = insert_after
-            item_statements, num, _ = self._create_dom(item, top=var_name, count=num)
+            item_statements, count, _ = self._create_dom(item, top=var_name, count=num)
             num = count + 1
             statements.extend(item_statements)
         return "\n\t".join(statements)
@@ -298,21 +298,39 @@ class RestartlessButton(Button):
         return result
     
     def _create_jsm_toolbar(self, button_hash, toolbar_template, file_name, values):
-        tool_bars, bottom_box, toolbar_ids = self._create_toolbar(button_hash, toolbar_template, file_name, values)
-        if not tool_bars and not bottom_box:
+        toolbar_ids = []
+        toolbars = []
+        if file_name in self._settings.get("extra_toolbars_disabled"):
             return '', []
-        result = []
         count = 0
-        for toolbars, box_setting in ((tool_bars, "file_to_toolbar_box"), (bottom_box, "file_to_bottom_box")):
-            num = count
-            if not toolbars: 
-                continue
+        max_count = self._settings.get("buttons_per_toolbar")
+        buttons = values.keys()
+        for box_setting, include_setting in [("file_to_toolbar_box", "include_toolbars"),
+                                                       ("file_to_bottom_box", "include_satusbars")]:
             toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
-            toolbox = '\n<%s id="%s">\n%s\n</%s>' % (toolbar_node, toolbar_box, '\n'.join(toolbars), toolbar_node)
-            statements, count, _ = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', toolbox)), count=num)
-            count += 1
-            statements.pop(-1)
-            statements.pop(1)
-            statements[0] = "var %s_%s = document.getElementById('%s');" % (toolbar_node, num, toolbar_box)
-            result.extend(statements)
-        return "\n\t".join(result), toolbar_ids
+            data = {
+                "defaultset": "",
+                "persist": "collapsed,hidden",
+                "context": "toolbar-context-menu",
+                "class": "toolbar-buttons-toolbar chromeclass-toolbar",
+                "mode": "icons",
+                "iconsize": "small",
+                "customizable": "true",
+            }
+            if self._settings.get(include_setting) and toolbar_box:
+                number = self.toolbar_count(include_setting, values, max_count)
+                for i in range(number):
+                    if self._settings.get("put_button_on_toolbar"):
+                        data["defaultset"] = ",".join(buttons[i * max_count:(i + 1) * max_count])
+                    button_hash.update(str(i))
+                    hash = button_hash.hexdigest()[:6]
+                    label_number = "" if (number + count) == 1 else " %s" % (i + count + 1)
+                    toolbar_ids.append("tb-toolbar-%s" % hash)
+                    if include_setting != "include_toolbars":
+                        data["toolboxid"] = toolbar_box
+                    data["id"] = "tb-toolbar-%s" % hash
+                    toolbarname = self._dom_string_lookup("&tb-toolbar-buttons-toggle-toolbar.name;%s" % label_number)
+                    values["tb-toolbar-buttons-toggle-toolbar-%s" % hash] = toolbar_template.replace("{{hash}}", hash).replace("{{ number }}", label_number)
+                    toolbars.append("""createToolbar(document, '%s', %s, %s)""" % (toolbar_box, json.dumps(data), toolbarname))
+                count += number
+        return "\n\t\t".join(toolbars), toolbar_ids
