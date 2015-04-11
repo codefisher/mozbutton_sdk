@@ -88,6 +88,25 @@ this.CustomizableUI = {
 		try {
 			gAreas.delete(aName);
 		} catch(e) {}
+		callWithEachWindow(function (win) {
+			var doc = win.document;
+			var toolbar = doc.getElementById(aName);
+			if(toolbar) {
+				var palette = toolbar.toolbox.palette;
+				if(aDestroyPlacements) {
+					toolbar.setAttribute('currentset', '');
+					doc.persist(toolbar, 'currentset');
+				}
+				for(var i = 0; i < toolbar.childNodes.length; i++) {
+					var node = toolbar.childNodes[i];
+					var nodeName = node.nodeName;
+					if(nodeName != 'toolbarseparator' && nodeName != 'toolbarspacer' && nodeName != 'toolbarspring') {
+						palette.appendChild(node);
+					}
+				}
+			}
+		})
+
 	},
 
 	addListener: function(aListener) {
@@ -232,14 +251,10 @@ function getButton(aButtonId, toolbar) {
 function restoreToToolbar(toolbox, aWidgetId) {
 	let document = toolbox.ownerDocument;
 	let potentialToolbars = Array.slice(toolbox.getElementsByTagName('toolbar'));
-	for (let externalToolbar of toolbox.externalToolbars) {
-		if (externalToolbar.getAttribute("prependmenuitem")) {
-			potentialToolbars.unshift(externalToolbar);
-		} else {
-			potentialToolbars.push(externalToolbar);
-		}
+	if(toolbox.externalToolbars) {
+		potentialToolbars.concat(toolbox.externalToolbars);
 	}
-	for(var i in potentialToolbars) {
+	for(var i = 0; i < potentialToolbars.length; i++) {
 		var toolbar = potentialToolbars[i];
 		var buttonSet = toolbar.getAttribute('currentset');
 		var buttons = buttonSet.split(",");
@@ -274,7 +289,7 @@ function restoreToToolbar(toolbox, aWidgetId) {
 				document.persist(toolbar.id, 'currentset');
 				return true;
 			} catch(e) {
-				document.defaultView.console.log(e);
+				Components.utils.reportError(e);
 			}
 		}
 	}
@@ -358,7 +373,7 @@ function addWidgetToWindow(window, aProperties) {
 			}
 		}
 	} catch (e) {
-		document.defaultView.console.log(e);
+		Components.utils.reportError(e);
 	}
 }
 

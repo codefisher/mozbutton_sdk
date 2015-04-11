@@ -62,6 +62,32 @@ function loadButtons(window) {
 	{{end}}
 }
 
+function createToolbar(doc, toolbox, attributes, name) {
+	var special = ["id", "class", "defaultset", "currentset"];
+	var toolbar = doc.createElement('toolbar');
+	for(var attr in attributes) {
+		if(special.indexOf(attr) == -1) {
+			toolbar.setAttribute(attr, attributes[attr]);
+		}
+	}
+	toolbar.setAttribute('toolbarname', name);
+	if(attributes.id) {
+		toolbar.id = attributes.id;
+	}
+	if(attributes.class) {
+		toolbar.className = attributes.class;
+	}
+	doc.getElementById(toolbox).appendChild(toolbar);
+	// put after appending to stop Thunderbird/SeaMonkey loading the buttons
+	// which messes with our CustomizableUI
+	if(attributes.defaultset) {
+		toolbar.setAttribute('defaultset', attributes['defaultset']);
+	}
+	if(attributes.currentset) {
+		toolbar.setAttribute('currentset', attributes['currentset']);
+	}
+}
+
 function unloadButtons(window) {
 	var document = window.document;
 	var button_ids = {{button_ids}};
@@ -87,15 +113,15 @@ function unloadButtons(window) {
 	for(var t = 0; t < toolbar_ids.length; t++) {
 		var toolbar = document.getElementById(toolbar_ids[t]);
 		if(toolbar) {
-			toolbar.parentNode.removeChild(toolbar);
 			CustomizableUI.unregisterArea(toolbar_ids[t], false);
+			toolbar.parentNode.removeChild(toolbar);
 		}
 	}
 	for(var i = 0; i < ui_ids.length; i++) {
 		var node = document.getElementById(ui_ids[i]);
 		while(node) {
 			node.parentNode.removeChild(node);
-			var node = document.getElementById(ui_ids[i]);
+			node = document.getElementById(ui_ids[i]);
 		}
 	}
 	for(var i = 0; i < gShutDownFunctions.length; i++) {
