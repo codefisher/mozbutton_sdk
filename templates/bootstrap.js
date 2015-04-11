@@ -17,7 +17,10 @@ function loadIntoWindow(window) {
 	let modules = getModules(uri);
 	if(modules) {
 		for (var i = 0, len = styleSheets.length; i < len; i++) {
-			window.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils).loadSheet(styleSheets[i], 1);
+			try {
+				window.QueryInterface(Ci.nsIInterfaceRequestor)
+					.getInterface(Ci.nsIDOMWindowUtils).loadSheet(styleSheets[i], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
+			} catch(e) {} // throws error is there had been an unclean shutdown and the sheet is still loaded
 		}
 		for(var i = 0; i < modules.length; i++) {
 			try {
@@ -31,7 +34,8 @@ function loadIntoWindow(window) {
 	}
 	if(uri == 'chrome://global/content/customizeToolbar.xul') {
 		for (var j = 0, len = styleSheets.length; j < len; j++) {
-			window.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils).loadSheet(styleSheets[j], 1);
+			window.QueryInterface(Ci.nsIInterfaceRequestor)
+				.getInterface(Ci.nsIDOMWindowUtils).loadSheet(styleSheets[j], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
 		}
 	}
 }
@@ -41,7 +45,8 @@ function unloadFromWindow(window) {
 	let modules = getModules(uri);
 	if(modules) {
 		for (let i = 0, len = styleSheets.length; i < len; i++) {
-			window.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils).removeSheet(styleSheets[i], 1);
+			window.QueryInterface(Ci.nsIInterfaceRequestor)
+				.getInterface(Ci.nsIDOMWindowUtils).removeSheet(styleSheets[i], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
 		}
 		for(var i = 0; i < modules.length; i++) {
 			try {
@@ -55,7 +60,8 @@ function unloadFromWindow(window) {
 	}
 	if(uri == 'chrome://global/content/customizeToolbar.xul') {
 		for (var i = 0, len = styleSheets.length; i < len; i++) {
-			window.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils).removeSheet(styleSheets[i], 1);
+			window.QueryInterface(Ci.nsIInterfaceRequestor)
+				.getInterface(Ci.nsIDOMWindowUtils).removeSheet(styleSheets[i], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
 		}
 	}
 }
@@ -119,7 +125,7 @@ function shutdown(data, reason) {
 		let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
 		unloadFromWindow(domWindow);
 	}
-	//Cu.unload("chrome://{{chrome_name}}/content/customizable.jsm");
+	Cu.unload("chrome://{{chrome_name}}/content/customizable.jsm");
 }
 
 function install(data, reason) {
