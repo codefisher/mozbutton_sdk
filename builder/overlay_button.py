@@ -35,7 +35,7 @@ class OverlayButton(Button):
             menu.append(menupopup)
             overlay_menupopup = ET.Element("menupopup", {"id": menu_name})
             overlay_menupopup.append(menu)
-            statements.append(ET.tostring(menupopup, pretty_print=True).replace("&amp;", "&"))
+            statements.append(ET.tostring(overlay_menupopup, pretty_print=True).replace("&amp;", "&"))
         if in_menu:
             for menu_name, items in itertools.groupby(sorted(in_menu), key=operator.itemgetter(0)):
                 menupopup = ET.Element("menupopup", {"id": menu_name})
