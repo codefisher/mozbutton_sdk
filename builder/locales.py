@@ -7,6 +7,7 @@ import codecs
 from lxml import etree
 
 entity_re = re.compile(r"<!ENTITY\s+([\w\-\.]+?)\s+[\"'](.*?)[\"']\s*>")
+ampersand_fix = re.compile(r'&(?![A-Za-z]+[0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)')
 
 class Locale(object):
     """Parses the localisation files of the extension and queries it for data"""
@@ -141,19 +142,25 @@ class Locale(object):
         return None
 
 
-    def _dtd_inter(self, strings, button, format, locale):
+    def _dtd_inter(self, strings, button, format, locale, format_type):
         for string in strings:
             value = self.get_string(string, locale, button)
             if value is not None:
+                if format_type == "properites":
+                    value = value.replace("&amp;", "&").replace("&apos;", "'").replace("&quot;", '"').replace("&brandShortName;", '')
+                else:
+                    value = ampersand_fix.sub('&amp;', value).replace("'", "&apos;").replace('"', "&quot;")
                 yield format % (string, value)
 
-    def get_dtd_data(self, strings, button=None, untranslated=True, format=None):
+    def get_dtd_data(self, strings, button=None, untranslated=True, format_type="dtd"):
         """Gets a set of files with all the strings wanted
 
         get_dtd_data(list<str>) -> dict<str: str>
         """
         default = self._settings.get("default_locale")
-        if not format:
+        if format_type == "properties":
+            format = "%s=%s"
+        else:
             format = """<!ENTITY %s "%s">"""
         result = {}
         strings = list(strings)
@@ -172,7 +179,7 @@ class Locale(object):
             else:
                 if not untranslated and locale != default:
                     continue
-            result[locale] = "\n".join(self._dtd_inter(strings, button, format, locale))
+            result[locale] = "\n".join(self._dtd_inter(strings, button, format, locale, format_type))
         return result
 
     def get_properties_data(self, strings, button=None):
