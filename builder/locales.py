@@ -146,7 +146,7 @@ class Locale(object):
         for string in strings:
             value = self.get_string(string, locale, button)
             if value is not None:
-                if format_type == "properites":
+                if format_type == "properties":
                     value = value.replace("&amp;", "&").replace("&apos;", "'").replace("&quot;", '"').replace("&brandShortName;", '')
                 else:
                     value = ampersand_fix.sub('&amp;', value).replace("'", "&apos;").replace('"', "&quot;")
