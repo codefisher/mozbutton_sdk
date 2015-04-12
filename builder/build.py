@@ -99,7 +99,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
 
     locale_prefix = settings.get("locale_file_prefix")    
     if settings.get('restartless'):
-        dtd_data = button_locales.get_dtd_data(buttons.get_locale_strings(), buttons, untranslated=False, format="properties")
+        dtd_data = button_locales.get_dtd_data(buttons.get_locale_strings(), buttons, untranslated=False, format_type="properties")
         for locale, data in dtd_data.iteritems():
             xpi.writestr(os.path.join("chrome", "locale", locale, "%sbutton_labels.properties" % locale_prefix), bytes_string(data))
     else:
