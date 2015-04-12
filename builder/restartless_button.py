@@ -19,7 +19,7 @@ class RestartlessButton(Button):
     def jsm_keyboard_shortcuts(self, file_name):
         keys = self.get_keyboard_shortcuts(file_name)
         if keys:
-            statements, count, _ = self._create_dom(ET.fromstring(re.sub(r'&([^;]+);', r'\1', keys)), doc="document")
+            statements, count, _ = self._create_dom(ET.fromstring(keys.replace('&', '&amp;')), doc="document")
             statements.pop(-1)
             statements.insert(0, "var keyset_0 = document.getElementById('%s');\n\tif(!keyset_0) {" % self._settings.get("file_to_keyset").get(file_name))
             statements.insert(3, 'document.documentElement.appendChild(keyset_0);\n\t}')
@@ -64,16 +64,16 @@ class RestartlessButton(Button):
         return "\n\t".join(statements)
     
     def _dom_string_lookup(self, value):
-        value = re.sub(r'&([^;]+);', r'\1', value)
-        if " " in value:
-            name, sep, other = value.partition(' ')
-            other = " + '%s%s'" % (sep, other) if sep else ""
-            return "buttonStrings.get('%s')%s" % (name, other)
-        # for this to work we would need to look up the string and search in it, not its name
-        #elif "brandShortName" in value:
-        #    return "buttonStrings.get('%s'.replace('&brandShortName;', Cc['@mozilla.org/xre/app-info;1'].createInstance(Ci.nsIXULAppInfo).name))" % value
-        else:
-            return "buttonStrings.get('%s')" % value
+        result = []
+        items = re.findall(r'&.+?;|[^&;]+', value)
+        for item in items:
+            if item == "&brandShortName;":
+                result.append("Cc['@mozilla.org/xre/app-info;1'].createInstance(Ci.nsIXULAppInfo).name")
+            elif item[0] == '&' and item[-1] == ';':
+                result.append("buttonStrings.get('%s')" % item[1:-1])
+            else:
+                result.append("'%s'" % item)
+        return ' + '.join(result)
 
     def _create_dom(self, root, top=None, count=0, doc='document', child_parent=None, rename=None, append_children=True):
         num = count
@@ -137,9 +137,8 @@ class RestartlessButton(Button):
             return order.index(attr[0].lower())
         return 100
         
-    def _create_dom_button(self, button_id, xul, file_name, count, toolbar_ids):
+    def _create_dom_button(self, button_id, root, file_name, count, toolbar_ids):
         add_to_main_toolbar = self._settings.get("add_to_main_toolbar")
-        root = ET.fromstring(xul)
         if 'viewid' in root.attrib:
             self._ui_ids.add(root.attrib["viewid"])
             statements, _, children = self._create_dom(root, child_parent="popupset", append_children=False)
@@ -210,10 +209,11 @@ class RestartlessButton(Button):
 
 
 
-    def _create_jsm_button(self, file_name, toolbar_ids, count, button_id, attr):
+    def _create_jsm_button(self, button_id, root, file_name, count, toolbar_ids):
         toolbar_max_count = self._settings.get("buttons_per_toolbar")
         add_to_main_toolbar = self._settings.get("add_to_main_toolbar")
         data = {}
+        attr = root.attrib
         self._apply_toolbox(file_name, data)
         if add_to_main_toolbar and button_id in add_to_main_toolbar:
             data['defaultArea'] = "'%s'" % self._settings.get('file_to_main_toolbar').get(file_name)
@@ -242,8 +242,6 @@ class RestartlessButton(Button):
         with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'button.jsm'), encoding='utf-8') as template_file:
             template = template_file.read()
         result = {}
-        simple_button_re = re.compile(r"^<toolbarbutton(.*)/>$", re.DOTALL)
-        attr_match = re.compile(r'''\b([\w\-]+)="([^"]*)"''', re.DOTALL)
         simple_attrs = {'label', 'tooltiptext', 'id', 'oncommand', 'onclick', 'key', 'class'}
         button_hash, toolbar_template = self._get_toolbar_info()
         for file_name, values in self._button_xul.iteritems():
@@ -256,17 +254,13 @@ class RestartlessButton(Button):
             count = 0
             modules = set()
             for button_id, xul in values.items():
+                root = ET.fromstring(xul.replace('&', '&amp;'))
                 modules.update(self._modules[button_id])
-                attr_data_match = simple_button_re.findall(xul)
-                if attr_data_match:
-                    attr_data = attr_data_match[0]
+                attr = root.attrib
+                if not len(root) and not set(attr.keys()).difference(simple_attrs) and (not "class" in attr or attr["class"] == "toolbarbutton-1 chromeclass-toolbar-additional"):
+                    jsm_file.append(self._create_jsm_button(button_id, root, file_name, count, toolbar_ids))
                 else:
-                    attr_data = ''
-                attr = dict(attr_match.findall(attr_data))
-                if attr_data and not set(attr.keys()).difference(simple_attrs) and (not "class" in attr or attr["class"] == "toolbarbutton-1 chromeclass-toolbar-additional"):
-                    jsm_file.append(self._create_jsm_button(file_name, toolbar_ids, count, button_id, attr))
-                else:
-                    jsm_file.append(self._create_dom_button(button_id, re.sub(r'&([^;]+);', r'\1', xul), file_name, count, toolbar_ids))
+                    jsm_file.append(self._create_dom_button(button_id, root, file_name, count, toolbar_ids))
                 count += 1
             modules_import = "\n" + "\n".join("try { Cu.import('%s'); } catch(e) {}" % mod for mod in modules if mod)
             if self._settings.get("menu_meta"):
