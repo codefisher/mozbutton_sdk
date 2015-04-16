@@ -5,15 +5,15 @@ import math
 import hashlib
 import codecs
 from collections import defaultdict
-import grayscale
-from util import get_pref_folders
+from builder import grayscale
+from builder.util import get_pref_folders
 from collections import namedtuple
 import lxml.etree as ET
 try:
     from PIL import Image
 except ImportError:
     pass
-from simple_button import SimpleButton, get_image
+from builder.simple_button import SimpleButton, get_image
 
 Menuitem = namedtuple('Menuitem', ['node', 'parent_id', 'insert_after'])
 
@@ -172,7 +172,7 @@ class Button(SimpleButton):
                 files[application][title]['data'].append(data)
             else:
                 files[application][title] = {'data': [data], 'icon': icon}
-        for button, (first, data) in self._button_options.iteritems():
+        for button, (first, data) in self._button_options.items():
             for application in self._button_applications[button]:
                 self._option_applications.add(application)
                 append(files, application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
@@ -192,9 +192,9 @@ class Button(SimpleButton):
                     self._button_options[file_name] = (first, data)
                 for application in applications:
                     append(files, application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
-        for application, data in files.iteritems():
+        for application, data in files.items():
             button_pref = []
-            for panel, info in data.iteritems():
+            for panel, info in data.items():
                 icon = info['icon']
                 self._option_icons.add(icon)
                 self._option_titles.add(panel)
@@ -226,8 +226,8 @@ class Button(SimpleButton):
     def get_locale_strings(self):
         locale_match = re.compile("&([a-zA-Z0-9.-]*);")
         strings = []
-        for buttons in self._button_xul.itervalues():
-            for button in buttons.itervalues():
+        for buttons in self._button_xul.values():
+            for button in buttons.values():
                 strings.extend(locale_match.findall(button))
         for button in self._button_keys.keys():
             strings.extend(["%s.key" % button, "%s.modifier" % button])
@@ -238,7 +238,7 @@ class Button(SimpleButton):
     def get_extra_locale_strings(self):
         locale_match = re.compile("&([a-zA-Z0-9.-]*);")
         strings = []
-        for file_name in self._extra_files.itervalues():
+        for file_name in self._extra_files.values():
             with open(file_name, 'r') as xul:
                 strings.extend(locale_match.findall(xul.read()))
         strings = list(set(strings))
@@ -253,7 +253,7 @@ class Button(SimpleButton):
         locale_match = re.compile("&([a-zA-Z0-9.-]*);")
         strings = list(self._option_titles)
         strings.append("options.window.title")
-        for first, value in self._button_options.itervalues():
+        for first, value in self._button_options.values():
             strings.extend(locale_match.findall(value))
         return list(set(strings))
 
@@ -271,7 +271,7 @@ class Button(SimpleButton):
             else:
                 for button in self._buttons:
                     settings.append(("%sshowamenu.%s-menu-item" % (self._settings.get("pref_root"), button), self._settings.get("default_show_menu_pref")))
-        for name, value in self._preferences.iteritems():
+        for name, value in self._preferences.items():
             settings.append(("%s%s" % (self._settings.get("pref_root"), name), value))
         if format_dict:
             return "\n\t".join("%s: %s," % setting for setting in settings)
@@ -311,7 +311,7 @@ class Button(SimpleButton):
         image_map = {}
         if self._settings.get("merge_images"):
             image_set = list()
-            for button, image_data in self._button_image.iteritems():
+            for button, image_data in self._button_image.items():
                 for image, modifier in image_data:
                     image_set.append(image)
             image_count = len(image_set)
@@ -319,7 +319,7 @@ class Button(SimpleButton):
             image_map_x = {}
             for size in icon_size_set:
                 if size is not None:
-                    y, x = int(math.ceil(image_count*int(size) / 1000.0)), (1000 / int(size))
+                    y, x = int(math.ceil(image_count*int(size) // 1000.0)), (1000 // int(size))
                     if y == 1:
                         x = image_count
                     image_map_x[size] = x
@@ -327,10 +327,10 @@ class Button(SimpleButton):
         count = 0
         offset = 0
         def box_cmp(x, offset):
-            y_offset = offset / x
+            y_offset = offset // x
             x_offset = offset % x
             return (x_offset * int(size), y_offset * int(size), (x_offset + 1) * int(size), (y_offset + 1) * int(size))
-        for button, image_data in self._button_image.iteritems():
+        for button, image_data in self._button_image.items():
             values["id"] = button
             for image, modifier in image_data:
                 if image[0] == "*" or image[0] == "-":
@@ -345,7 +345,7 @@ class Button(SimpleButton):
                             if size is not None:
                                 data[size] = grayscale.image_to_graysacle(get_image(self._settings, size, image[1:]), opacity)
                     except ValueError:
-                        print "image %s does not exist" % image
+                        print("image %s does not exist" % image)
                         continue
                     if self._settings.get("merge_images"):
                         if image_map.get(_image):
@@ -379,9 +379,9 @@ class Button(SimpleButton):
                                         image_map_size[size].paste(im, box_cmp(image_map_x[size], offset))
                                 count += 1
                             except IOError:
-                                print "image %s does not exist" % image
+                                print("image %s does not exist" % image)
                             except ValueError as e:
-                                print "count not use image:", image, size
+                                print("count not use image:", image, size)
                     else:
                         offset = count
                         image_list.append(image)
@@ -462,15 +462,15 @@ class Button(SimpleButton):
         js_imports = set()
         
         # we look though the XUL for functions first
-        for file_name, values in self._button_xul.iteritems():
-            for button, xul in values.iteritems():
+        for file_name, values in self._button_xul.items():
+            for button, xul in values.items():
                 js_imports.update(detect_depandancy.findall(xul))
         if self._settings.get("menuitems"):
             js_imports.add("sortMenu")
             js_imports.add("handelMenuLoaders")
             js_imports.add("setUpMenuShower")
         
-        for file_name, js in self._button_js.iteritems():
+        for file_name, js in self._button_js.items():
             js_file = "\n".join(js.values())
             js_includes.update(include_match.findall(js_file))
             js_file = include_match_replace.sub("", js_file)
@@ -525,7 +525,7 @@ class Button(SimpleButton):
                         js_files[file_name] = end
         if self._button_options_js:
             extra_javascript = []
-            for button, value in self._button_options_js.iteritems():
+            for button, value in self._button_options_js.items():
                 #TODO: dependency resolution is not enabled here yet
                 js_options_include.update(include_match.findall(value))
                 js_options_include.update(detect_depandancy.findall(self._button_options[button][1]))
@@ -571,13 +571,12 @@ class Button(SimpleButton):
                 name, _ = line.split(":")
                 interfaces[name] = line.strip()
         js_global_interfaces = set(interface_match.findall(js_files["button"]))
-        for js_file, js_data in js_files.iteritems():
+        for js_file, js_data in js_files.items():
             self._properties_strings.update(string_match.findall(js_data))
             js_interfaces = set(interface_match.findall(js_data))
             if js_interfaces:
                 lines = []
-                interfaces_list = interfaces.items()
-                interfaces_list.sort(key=lambda x: x[0].lower())
+                interfaces_list = sorted(interfaces.items(), key=lambda x: x[0].lower())
                 for interface, constructor in interfaces_list:
                     if (interface in js_interfaces
                         and (interface not in js_global_interfaces
@@ -594,7 +593,7 @@ class Button(SimpleButton):
                     self._settings.get("chrome_name")).replace("{{pref_root}}",
                     self._settings.get("pref_root")).replace("{{locale_file_prefix}}",
                     self._settings.get("locale_file_prefix"))
-        js_files = dict((key, value) for key, value in js_files.iteritems() if value)
+        js_files = dict((key, value) for key, value in js_files.items() if value)
         if js_files:
             self._has_javascript = True
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "loader.js"), "r") as loader:
@@ -613,7 +612,7 @@ class Button(SimpleButton):
         if not self._settings.get("use_keyboard_shortcuts") or not self._settings.get("file_to_keyset").get(file_name):
             return ""
         keys = []
-        for button, (key, modifier) in self._button_keys.iteritems():
+        for button, (key, modifier) in self._button_keys.items():
             attr = 'key' if len(key) == 1 else "keycode"
             if file_name in self._button_xul:
                 mod = "" if not modifier else 'modifiers="&%s.modifier;" ' % button
@@ -634,7 +633,7 @@ class Button(SimpleButton):
         data = {}
         menuitems = self._settings.get("menuitems")
         menu_placement = self._menu_placement(file_name, buttons)
-        for button_id, xul in buttons.iteritems():
+        for button_id, xul in buttons.items():
             if not menuitems or button_id not in menuitems or button_id not in menu_placement:
                 continue
             root = ET.fromstring(xul.replace('&', '&amp;'))
@@ -736,7 +735,7 @@ class Button(SimpleButton):
         if self._settings.get("include_toolbars") or self._settings.get("include_satusbars"):
             with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'toolbar-toggle.xul'), encoding='utf-8') as template_file:
                 toolbar_template = template_file.read()
-            button_hash = hashlib.md5(self._settings.get('extension_id'))
+            button_hash = hashlib.md5(self._settings.get('extension_id').encode('utf-8'))
         return button_hash, toolbar_template
 
     def _get_js_file_list(self, file_name):

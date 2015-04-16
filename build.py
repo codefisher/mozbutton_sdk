@@ -11,7 +11,7 @@ from builder.util import apply_settings_files, get_svn_revision, get_git_revisio
 try:
     from config import settings
 except ImportError:
-    print "Failed to load settings."
+    print("Failed to load settings.")
     sys.exit(1)
 
 def main():
@@ -20,7 +20,7 @@ def main():
             "git-revision", "lookup-max-versions", "svn-revision", "update-rdf="])
     opts_table = dict(opts)
     if "--help" in opts_table:
-        print textwrap.dedent("""
+        print(textwrap.dedent("""
         MozButton SDK
 
             -b    - a button to inlcude
@@ -46,7 +46,7 @@ def main():
             --screen-shot        - a fake screen shot of all the buttons in the extension
             --icons-per-row=     - the number of icons to put on each row of the screen shot
             --screen-shot-font=  - the file to the font to use for the window title
-        """).strip()
+        """).strip())
         return
     config = dict(settings.config)
     apply_settings_files(config, args)
@@ -94,7 +94,7 @@ def main():
         prof.print_stats()
     else:
         build_extension(config)
-    print time.time() - start
+    print(time.time() - start)
 
 if __name__ == "__main__":
     main()

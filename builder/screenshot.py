@@ -1,7 +1,7 @@
 import os
-import button
+from builder import button
 import math
-from util import get_button_folders
+from builder.util import get_button_folders
 from PIL import Image, ImageDraw, ImageFont
 
 class IconButton(button.SimpleButton):
@@ -9,7 +9,7 @@ class IconButton(button.SimpleButton):
         button.SimpleButton.__init__(self, folders, buttons, settings, applications)
         self._icons = set()
 
-        for button_id, icons in self._button_image.iteritems():
+        for button_id, icons in self._button_image.items():
             if not button_id in self._button_names:
                 continue
             for image, selector in icons:

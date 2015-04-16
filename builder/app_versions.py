@@ -1,9 +1,13 @@
 import urllib
-import HTMLParser
+
+try:
+    from HTMLParser import HTMLParser
+except ImportError:
+    from html.parser import HTMLParser
 
 AMO_VERSION_PAGE = "https://addons.mozilla.org/en-US/firefox/pages/appversions/"
 
-class AppVersionParser(HTMLParser.HTMLParser):
+class AppVersionParser(HTMLParser):
 
     def __init__(self):
         HTMLParser.HTMLParser.__init__(self)
@@ -45,4 +49,4 @@ def get_app_versions():
     return dict(parser.get_latest())
 
 if __name__ == "__main__":
-    print get_app_versions()
+    print(get_app_versions())

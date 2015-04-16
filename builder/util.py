@@ -4,6 +4,11 @@ import codecs
 import itertools
 
 try:
+    basestring # problem in Py3
+except NameError:
+    basestring = str
+
+try:
     import svn.local
 except ImportError:
     pass
@@ -18,7 +23,7 @@ def apply_settings_files(settings, file_names):
         if not settings.get("project_root"):
             settings["project_root"] = os.path.abspath(os.path.join(os.path.dirname(file_name)))
         try:
-            with codecs.open(file_name) as fp:
+            with codecs.open(file_name, encoding='utf-8') as fp:
                 try:
                     settings.update(json.load(fp))
                 except ValueError:

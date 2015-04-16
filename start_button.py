@@ -7,7 +7,7 @@ from builder.util import apply_settings_files
 try:
     from config import settings
 except ImportError:
-    print "Failed to load settings."
+    print("Failed to load settings.")
     sys.exit(1)
     
 def function_name(match):

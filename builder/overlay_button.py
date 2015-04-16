@@ -7,7 +7,7 @@ except ImportError:
 import operator
 import itertools
 
-from ext_button import Button
+from builder.ext_button import Button
 
 class OverlayButton(Button):
 
@@ -54,7 +54,7 @@ class OverlayButton(Button):
         with open(os.path.join(self._settings.get("button_sdk_root"), 'templates', 'button.xul')) as template_file:
             template = template_file.read()
         result = {}
-        for file_name, values in self._button_xul.iteritems():
+        for file_name, values in self._button_xul.items():
             js_includes = []
             for js_file in self._get_js_file_list(file_name):
                 js_includes.append("""<script type="application/x-javascript" src="chrome://%s/content/%s.js"/>""" % (self._settings.get("chrome_name"), js_file))

@@ -3,22 +3,25 @@
 
 import os
 import zipfile
-from locales import Locale
-from button import get_image, RestartlessButton, OverlayButton, Button
-from util import get_locale_folders, get_folders
-from app_versions import get_app_versions
+from builder.locales import Locale
+from builder.button import get_image, RestartlessButton, OverlayButton, Button
+from builder.util import get_locale_folders, get_folders
+from builder.app_versions import get_app_versions
 import codecs
 from collections import defaultdict
 
 def bytes_string(string):
-    if type(string) == unicode:
-        return str(string.encode("utf-8"))
-    return string
+    try:
+        if type(string) == unicode:
+            return str(string.encode("utf-8"))
+        return string
+    except:
+        return string.encode("utf-8")
 
 def apply_max_version(settings):
     versions = get_app_versions()
     app_data = settings.get("applications_data")
-    for key, app_set in app_data.iteritems():
+    for key, app_set in app_data.items():
         rows = []
         for item in app_set:
             item = list(item)
@@ -58,7 +61,7 @@ def get_buttons(settings, cls=None):
 
 def build_extension(settings, output=None, project_root=None, button_locales=None):
     if os.path.join(settings.get("image_path")) is None:
-        print "Please set the image_path setting"
+        print("Please set the image_path setting")
         return
     if button_locales is None:
         locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
@@ -74,15 +77,15 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     else:
         xpi = zipfile.ZipFile(xpi_file_name, "w", zipfile.ZIP_DEFLATED)
     
-    for file, data in buttons.get_js_files().iteritems():
+    for file, data in buttons.get_js_files().items():
         xpi.writestr(os.path.join("chrome", "content", file + ".js"),
                 data.replace("{{uuid}}", settings.get("extension_id")))
     
     if settings.get('restartless'):
-        for file, data in buttons.get_jsm_files().iteritems():
+        for file, data in buttons.get_jsm_files().items():
             xpi.writestr(os.path.join("chrome", "content", file + ".jsm"), bytes_string(data))
     else:
-        for file, data in buttons.get_xul_files().iteritems():
+        for file, data in buttons.get_xul_files().items():
             xpi.writestr(os.path.join("chrome", "content", file + ".xul"), bytes_string(data)) 
 
     if settings.get("fix_meta"):
@@ -100,17 +103,17 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     locale_prefix = settings.get("locale_file_prefix")    
     if settings.get('restartless'):
         dtd_data = button_locales.get_dtd_data(buttons.get_locale_strings(), buttons, untranslated=False, format_type="properties")
-        for locale, data in dtd_data.iteritems():
+        for locale, data in dtd_data.items():
             xpi.writestr(os.path.join("chrome", "locale", locale, "%sbutton_labels.properties" % locale_prefix), bytes_string(data))
     else:
         dtd_data = button_locales.get_dtd_data(buttons.get_locale_strings(), buttons, untranslated=False)
-        for locale, data in dtd_data.iteritems():
+        for locale, data in dtd_data.items():
             xpi.writestr(os.path.join("chrome", "locale", locale, "%sbutton.dtd" % locale_prefix), bytes_string(data))
     
     locales_inuse = set(dtd_data.keys())
     extra_strings = button_locales.get_dtd_data(buttons.get_extra_locale_strings(), buttons)
     if extra_strings[settings.get("default_locale")]:
-        for locale, data in extra_strings.iteritems():
+        for locale, data in extra_strings.items():
             if locale in locales_inuse:
                 xpi.writestr(os.path.join("chrome", "locale", locale, "%sfiles.dtd" % locale_prefix), bytes_string(data))
     if settings.get("include_local_meta"):
@@ -118,34 +121,34 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
             xpi.write(path, os.path.join("chrome", "locale", locale, "meta.dtd"))
     properties_data = button_locales.get_properties_data(buttons.get_properties_strings(), buttons)
     if properties_data[settings.get("default_locale")]:
-        for locale, data in properties_data.iteritems():
+        for locale, data in properties_data.items():
             if locale in locales_inuse:
                 xpi.writestr(os.path.join("chrome", "locale", locale, "%sbutton.properties" % locale_prefix), bytes_string(data))
-    for name, path in buttons.get_extra_files().iteritems():
+    for name, path in buttons.get_extra_files().items():
         with codecs.open(path, encoding='utf-8') as fp:
             xpi.writestr(os.path.join("chrome", "content", "files", name), 
                          bytes_string(fp.read().replace("{{chrome_name}}", settings.get("chrome_name"))
                             .replace("{{locale_file_prefix}}", settings.get("locale_file_prefix"))))
     resources = buttons.get_resource_files()
     has_resources = bool(resources)
-    for name, path in resources.iteritems():
+    for name, path in resources.items():
         xpi.write(path, os.path.join("chrome", "content", "resources", name))
     
     options = buttons.get_options()
-    for file, data in options.iteritems():
+    for file, data in options.items():
         xpi.writestr(os.path.join("chrome", "content", "%s.xul" % file), data)
     for image in buttons.get_option_icons():
         xpi.write(get_image(settings, "32", image), os.path.join("chrome", "skin", "option", image))
     if options:
         options_strings = buttons.get_options_strings()
-        for locale, data in button_locales.get_dtd_data(options_strings, buttons).iteritems():
+        for locale, data in button_locales.get_dtd_data(options_strings, buttons).items():
             if locale in locales_inuse:
                 xpi.writestr(os.path.join("chrome", "locale", locale, "%soptions.dtd" % locale_prefix), bytes_string(data))
     option_applicaions = buttons.get_options_applications()
 
     css, image_list, image_data = buttons.get_css_file()
     icon_sizes = set(buttons.get_icon_size().values())
-    xpi.writestr(os.path.join("chrome", "skin", "button.css"), bytes(css))
+    xpi.writestr(os.path.join("chrome", "skin", "button.css"), bytes_string(css))
     for image in set(image_list):
         for size in icon_sizes:
             if size is not None:
@@ -153,8 +156,8 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
                     xpi.write(get_image(settings, size, image), os.path.join("chrome", "skin", size, image))
                 except (OSError, IOError):
                     xpi.write(get_image(settings, size, "picture-empty.png"), os.path.join("chrome", "skin", size, image))
-                    print "can not find file %s" % image
-    for file_name, data in image_data.iteritems():
+                    print("can not find file %s" % image)
+    for file_name, data in image_data.items():
         xpi.writestr(os.path.join("chrome", file_name), data)
     if settings.get("icon"):
         xpi.write(get_image(settings, "32", settings.get("icon")), "icon.png")

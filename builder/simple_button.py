@@ -37,10 +37,8 @@ class SimpleButton(object):
         self._button_keys = {}
         self._button_applications = defaultdict(set)
 
-        button_files = self._settings.get("file_to_application").keys()
-        button_files.sort()
-        self._app_files = self._settings.get("file_map").keys()
-        self._app_files.sort()
+        button_files = sorted(self._settings.get("file_to_application").keys())
+        self._app_files = sorted(self._settings.get("file_map").keys())
         self._window_files = list(set(button_files).difference(self._app_files))
         self._info = []
         self._strings = {}

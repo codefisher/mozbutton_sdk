@@ -8,7 +8,7 @@ try:
 except ImportError:
     pass
 
-from ext_button import Button
+from builder.ext_button import Button
 
 class RestartlessButton(Button):
 
@@ -164,7 +164,7 @@ class RestartlessButton(Button):
         if add_to_main_toolbar and button_id in add_to_main_toolbar:
             data['defaultArea'] = "'%s'" % self._settings.get('file_to_main_toolbar').get(file_name)
         elif self._settings.get("put_button_on_toolbar"):
-            toolbar_index = count / toolbar_max_count
+            toolbar_index = count // toolbar_max_count
             if len(toolbar_ids) > toolbar_index:
                 data['defaultArea'] = "'%s'" % toolbar_ids[toolbar_index]
         for key, value in root.attrib.items():
@@ -218,7 +218,7 @@ class RestartlessButton(Button):
         if add_to_main_toolbar and button_id in add_to_main_toolbar:
             data['defaultArea'] = "'%s'" % self._settings.get('file_to_main_toolbar').get(file_name)
         elif self._settings.get("put_button_on_toolbar"):
-            toolbar_index = count / toolbar_max_count
+            toolbar_index = count // toolbar_max_count
             if len(toolbar_ids) > toolbar_index:
                 data['defaultArea'] = "'%s'" % toolbar_ids[toolbar_index]
         for key, value in attr.items():
@@ -244,7 +244,7 @@ class RestartlessButton(Button):
         result = {}
         simple_attrs = {'label', 'tooltiptext', 'id', 'oncommand', 'onclick', 'key', 'class'}
         button_hash, toolbar_template = self._get_toolbar_info()
-        for file_name, values in self._button_xul.iteritems():
+        for file_name, values in self._button_xul.items():
             jsm_file = []
             js_includes = []
             for js_file in self._get_js_file_list(file_name):
@@ -277,7 +277,7 @@ class RestartlessButton(Button):
             result[file_name] = (template.replace('{{locale-file-prefix}}', self._settings.get("locale_file_prefix"))
                         .replace('{{modules}}', modules_import)
                         .replace('{{scripts}}', "\n\t".join(js_includes))
-                        .replace('{{button_ids}}', json.dumps(values.keys())) # we use this not self._buttons, because of the possible generated toolbar toggle buttons
+                        .replace('{{button_ids}}', json.dumps(list(values.keys()))) # we use this not self._buttons, because of the possible generated toolbar toggle buttons
                         .replace('{{toolbar_ids}}', json.dumps(toolbar_ids))
                         .replace('{{toolbars}}', toolbars)
                         .replace('{{menu_id}}', menu_id)
@@ -298,7 +298,7 @@ class RestartlessButton(Button):
             return '', []
         count = 0
         max_count = self._settings.get("buttons_per_toolbar")
-        buttons = values.keys()
+        buttons = list(values.keys())
         for box_setting, include_setting in [("file_to_toolbar_box", "include_toolbars"),
                                                        ("file_to_bottom_box", "include_satusbars")]:
             toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
@@ -316,7 +316,7 @@ class RestartlessButton(Button):
                 for i in range(number):
                     if self._settings.get("put_button_on_toolbar"):
                         data["defaultset"] = ",".join(buttons[i * max_count:(i + 1) * max_count])
-                    button_hash.update(str(i))
+                    button_hash.update(bytes(i))
                     hash = button_hash.hexdigest()[:6]
                     label_number = "" if (number + count) == 1 else " %s" % (i + count + 1)
                     toolbar_ids.append("tb-toolbar-%s" % hash)
