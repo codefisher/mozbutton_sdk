@@ -10,7 +10,7 @@ AMO_VERSION_PAGE = "https://addons.mozilla.org/en-US/firefox/pages/appversions/"
 class AppVersionParser(HTMLParser):
 
     def __init__(self):
-        super(HTMLParser, self).__init__()
+        HTMLParser.__init__(self)
         self._apps = []
         self._current = None
         self._read = False
