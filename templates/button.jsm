@@ -96,7 +96,9 @@ function unloadButtons(window) {
 
 	for(var i = 0; i < button_ids.length; i++) {
 		var button_id = button_ids[i];
-		CustomizableUI.destroyWidget(button_id);
+		if(gSetup) { // only need to try and do this once, not for every window, since it takes care of that.
+			CustomizableUI.destroyWidget(button_id);
+		}
 		var key = document.getElementById(button_id + '-key');
 		if(key) {
 			key.parentNode.removeChild(key);
@@ -106,6 +108,7 @@ function unloadButtons(window) {
 			menuitem.parentNode.removeChild(menuitem);
 		}
 	}
+	gSetup = false;
 	var menu = document.getElementById('{{menu_id}}');
 	if(menu && !menu.firstChild.firstChild) {
 		menu.parentNode.removeChild(menu);

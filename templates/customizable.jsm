@@ -415,11 +415,15 @@ function registerAreaForWindow(win, aName, aProperties) {
 }
 
 function handelWindowLoad(window) {
-	for (let aProperties of gWidgets) {
-		addWidgetToWindow(window, aProperties);
+	if(gWidgets) {
+		for (let aProperties of gWidgets) {
+			addWidgetToWindow(window, aProperties);
+		}
 	}
-	for (let aName of gAreas) {
-		registerAreaForWindow(window, aName, null);
+	if(gAreas) {
+		for (let aName of gAreas) {
+			registerAreaForWindow(window, aName, null);
+		}
 	}
 }
 
