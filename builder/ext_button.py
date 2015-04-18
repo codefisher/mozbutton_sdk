@@ -304,10 +304,8 @@ class Button(SimpleButton):
             template = f.read()
         lines = [template]
         values = {"chrome_name": self._settings.get("chrome_name")}
-        #small, large = self._settings.get("icon_size")
         icon_sizes = self.get_icon_size()
         icon_size_set = set(icon_sizes.values())
-        image_count = 0
         image_map = {}
         if self._settings.get("merge_images"):
             image_set = list()
@@ -319,7 +317,7 @@ class Button(SimpleButton):
             image_map_x = {}
             for size in icon_size_set:
                 if size is not None:
-                    y, x = int(math.ceil(image_count*int(size) // 1000.0)), (1000 // int(size))
+                    y, x = int(math.ceil(image_count*int(size) / 1000.0)), (1000 // int(size))
                     if y == 1:
                         x = image_count
                     image_map_x[size] = x
@@ -381,12 +379,11 @@ class Button(SimpleButton):
                             except IOError:
                                 print("image %s does not exist" % image)
                             except ValueError as e:
-                                print("count not use image:", image, size)
+                                print("count not use image: %s" % image)
                     else:
                         offset = count
                         image_list.append(image)
                         count += 1
-                #values["modifier"] = modifier
                 selectors = dict((key, list()) for key in icon_size_set)
                 for name, size in icon_sizes.items():
                     if size is None:
