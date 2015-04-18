@@ -94,6 +94,13 @@ function unloadButtons(window) {
 	var toolbar_ids = {{toolbar_ids}};
 	var ui_ids = {{ui_ids}};
 
+	for(var t = 0; t < toolbar_ids.length; t++) {
+		var toolbar = document.getElementById(toolbar_ids[t]);
+		if(toolbar) {
+			CustomizableUI.unregisterArea(toolbar_ids[t], false);
+			toolbar.parentNode.removeChild(toolbar);
+		}
+	}
 	for(var i = 0; i < button_ids.length; i++) {
 		var button_id = button_ids[i];
 		if(gSetup) { // only need to try and do this once, not for every window, since it takes care of that.
@@ -112,13 +119,6 @@ function unloadButtons(window) {
 	var menu = document.getElementById('{{menu_id}}');
 	if(menu && !menu.firstChild.firstChild) {
 		menu.parentNode.removeChild(menu);
-	}
-	for(var t = 0; t < toolbar_ids.length; t++) {
-		var toolbar = document.getElementById(toolbar_ids[t]);
-		if(toolbar) {
-			CustomizableUI.unregisterArea(toolbar_ids[t], false);
-			toolbar.parentNode.removeChild(toolbar);
-		}
 	}
 	for(var i = 0; i < ui_ids.length; i++) {
 		var node = document.getElementById(ui_ids[i]);
