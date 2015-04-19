@@ -129,6 +129,7 @@ this.CustomizableUI = {
 	},
 
 	registerToolbarNode: function(aToolbar, aExistingChildren) {
+		// do we need this?  It should not really be used by anyone.
 		throw("registerToolbarNode Not Implimented.");
 	},
 
@@ -137,7 +138,23 @@ this.CustomizableUI = {
 	},
 
 	removeWidgetFromArea: function(aWidgetId) {
-		throw("removeWidgetFromArea Not Implimented.");
+		callWithEachWindow(function (win) {
+			var doc = win.document;
+			var button = doc.getElementById(aWidgetId);
+			if(button) {
+				var toolbar = button.parentNode;
+				if (toolbar && toolbar.nodeName != 'toolbar') {
+					toolbar = button.parentNode;
+				}
+				if(toolbar) {
+					var palette = toolbar.toolbox.palette;
+					palette.appendChild(button);
+					var currentSet = toolbar.getAttribute('currentset');
+					toolbar.setAttribute('currentset', currentSet.replace(aWidgetId, ''));
+					toolbar.persist(toolbar, 'currentset');
+				}
+			}
+		});
 	},
 
 	moveWidgetWithinArea: function(aWidgetId, aPosition) {
@@ -170,8 +187,8 @@ this.CustomizableUI = {
 		// return String
 	},
 	getCustomizeTargetForArea: function(aAreaId, aWindow) {
-		throw("getCustomizeTargetForArea Not Implimented.");
-		// return DOMElement
+		// we always return the toolbar itself, since any other possibility is not supported
+		return aWindow.document.getElementById(aAreaId);
 	},
 	reset: function() {
 		throw("reset Not Implimented.");
