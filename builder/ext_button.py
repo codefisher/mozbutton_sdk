@@ -15,6 +15,11 @@ except ImportError:
     pass
 from builder.simple_button import SimpleButton, get_image
 
+try:
+    basestring
+except NameError:
+    basestring = str #py3
+
 Menuitem = namedtuple('Menuitem', ['node', 'parent_id', 'insert_after'])
 
 class Button(SimpleButton):

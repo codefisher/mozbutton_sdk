@@ -1,9 +1,9 @@
-from build import get_buttons, get_locale_folders, Locale, RestartlessButton, get_image, bytes_string
 import os
 import re
 import base64
 import urllib
 import lxml.etree as ET
+from .build import get_buttons, get_locale_folders, Locale, RestartlessButton, get_image, bytes_string
 
 CUSTOM_XUL = '''<?xml version="1.0" encoding="UTF-8"?>
 <custombutton xmlns:cb="http://xsms.nm.ru/custombuttons/">
@@ -34,7 +34,7 @@ class CButton(RestartlessButton):
                 with open(os.path.join(folder, "description"), "r") as description:
                     self._description[button_id] = description.read()
                     if not self._description[button_id].strip():
-                        print "Button %s lacks description" % button_id
+                        print("Button %s lacks description" % button_id)
     def set_local(self, local):
         self._local = local
 

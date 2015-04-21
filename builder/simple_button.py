@@ -3,6 +3,11 @@ import re
 from collections import defaultdict
 
 try:
+    unicode
+except NameError:
+    unicode = str
+
+try:
     from PIL import Image
 except ImportError:
     pass
@@ -29,9 +34,9 @@ class SimpleButton(object):
         except NameError:
             self._settings["merge_images"] = False
         if applications and "all" not in applications:
-            self._applications = applications
+            self._applications = list(applications)
         else:
-            self._applications = self._settings["applications_data"].keys()
+            self._applications = list(self._settings["applications_data"].keys())
         self._button_image = defaultdict(list)
         self._icons = {}
         self._button_keys = {}
@@ -177,6 +182,6 @@ class SimpleButton(object):
                 if value is None:
                     value = button_locale.get_dtd_value(default_locale, string_name, self)
             if value is None:
-                return u'' #print button_id
-            return unicode(value.replace("&brandShortName;", "").replace("&apos;", "'"))
+                return u''
+            return unicode(value.replace("&brandShortName;", "").replace("&apos;", "'").replace("&quot;", '"'))
         return locale_str

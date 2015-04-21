@@ -1,10 +1,11 @@
-from config import settings
-from builder.util import get_button_folders, get_locale_folders, get_folders, apply_settings_files
-from builder.locales import Locale
-from collections import defaultdict
+
 import os
 import sys
 import re
+from collections import defaultdict
+from .config import settings
+from .builder.util import get_locale_folders, apply_settings_files
+from .builder.locales import Locale
 
 entity_re = re.compile(r"<!ENTITY\s+([\w\-\.]+?)\s+[\"'](.*?)[\"']\s*>")
 

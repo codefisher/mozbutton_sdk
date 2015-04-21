@@ -14,6 +14,11 @@ except ImportError:
     print("Failed to load settings.")
     sys.exit(1)
 
+try:
+    raw_input
+except NameError:
+    raw_input = input
+
 def main():
     opts, args = getopt.getopt(sys.argv[1:], "pvb:l:a:o:f:s:m:", 
         ["help", "profile", "screen-shot", "icons-per-row=", "screen-shot-font=", 
