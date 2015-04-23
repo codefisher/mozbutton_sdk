@@ -68,6 +68,24 @@ def get_folders(limit, settings, folder):
         folders = list(folder for folder in folders if folder not in limits)
     return [os.path.join(folder, sub_folder) for sub_folder in folders], folders
 
+def extra_update_prams():
+    app_data = {
+        "item_id": "%ITEM_ID%",
+        "item_version": "%ITEM_VERSION%",
+        "item_maxapversion": "%ITEM_MAXAPPVERSION%",
+        "app_version": "%APP_VERSION%",
+        "req_version": "%REQ_VERSION%",
+        "item_status": "%ITEM_STATUS%",
+        "app_id": "%APP_ID%",
+        "current_app_version": "%CURRENT_APP_VERSION%",
+        "app_os": "%APP_OS%",
+        "app_abi": "%APP_ABI%",
+        "app_locale": "%APP_LOCALE%",
+        "update_type": "%UPDATE_TYPE%",
+        "compatibility_mode": "%COMPATIBILITY_MODE%",
+    }
+    return "&".join("%s=%s" % (key, value) for key, value in app_data.items())
+
 def create_update_rdf(config):
     xml = """<?xml version="1.0"?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
