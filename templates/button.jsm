@@ -9,7 +9,7 @@ const Cc = Components.classes;
 const Ci = Components.interfaces;
 const Cu = Components.utils;
 
-var EXPORTED_SYMBOLS = ["loadButtons", "unloadButtons", "setupButtons"];
+var EXPORTED_SYMBOLS = ["loadButtons", "unloadButtons", "setupButtons", "shutdownButtons"];
 
 try {
 	Cu.import("resource:///modules/CustomizableUI.jsm");
@@ -43,17 +43,13 @@ var toolbar_buttons = {
 };
 var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getService(Ci.mozIJSSubScriptLoader);
 var gScope = this;
-var gSetup = false;
 // the number at the end forces a reload of the properties file, since sometimes it it catched when we don't want
 var buttonStrings = new StringBundle("chrome://{{chrome_name}}/locale/{{locale-file-prefix}}button_labels.properties?time=" + Date.now().toString());
 
 function setupButtons() {
-	if(!gSetup) {
-		var scope = Object.create(gScope);
-		{{scripts}}
-		{{buttons}}
-	}
-	gSetup = true;
+	var scope = Object.create(gScope);
+	{{scripts}}
+	{{buttons}}
 }
 
 function loadButtons(window) {
@@ -95,49 +91,52 @@ function createToolbar(doc, toolbox, attributes, name) {
 	}
 }
 
+var gButtonIds = {{button_ids}};
+
 function unloadButtons(window) {
 	var document = window.document;
-	var button_ids = {{button_ids}};
-	var toolbar_ids = {{toolbar_ids}};
-	var ui_ids = {{ui_ids}};
+	var toolbarIds = {{toolbar_ids}};
+	var uiIds = {{ui_ids}};
 
-	for(var t = 0; t < toolbar_ids.length; t++) {
-		var toolbar = document.getElementById(toolbar_ids[t]);
+	for(var t = 0; t < toolbarIds.length; t++) {
+		var toolbar = document.getElementById(toolbarIds[t]);
 		if(toolbar) {
-			CustomizableUI.unregisterArea(toolbar_ids[t], false);
+			CustomizableUI.unregisterArea(toolbarIds[t], false);
 			toolbar.parentNode.removeChild(toolbar);
 		}
 	}
-	for(var i = 0; i < button_ids.length; i++) {
-		var button_id = button_ids[i];
-		if(gSetup) { // only need to try and do this once, not for every window, since it takes care of that.
-			CustomizableUI.destroyWidget(button_id);
-		}
-		var key = document.getElementById(button_id + '-key');
+	for(var i = 0; i < gButtonIds.length; i++) {
+		var buttonId = gButtonIds[i];
+		var key = document.getElementById(buttonId + '-key');
 		if(key) {
 			key.parentNode.removeChild(key);
 		}
-		var menuitem = document.getElementById(button_id + '-menu-item');
+		var menuitem = document.getElementById(buttonId + '-menu-item');
 		if(menuitem) {
 			menuitem.parentNode.removeChild(menuitem);
 		}
 	}
-	gSetup = false;
 	var menu = document.getElementById('{{menu_id}}');
 	if(menu && !menu.firstChild.firstChild) {
 		menu.parentNode.removeChild(menu);
 	}
-	for(var i = 0; i < ui_ids.length; i++) {
-		var node = document.getElementById(ui_ids[i]);
+	for(var i = 0; i < uiIds.length; i++) {
+		var node = document.getElementById(uiIds[i]);
 		while(node) {
 			node.parentNode.removeChild(node);
-			node = document.getElementById(ui_ids[i]);
+			node = document.getElementById(uiIds[i]);
 		}
 	}
 	for(var i = 0; i < gShutDownFunctions.length; i++) {
 		try {
 			gShutDownFunctions[i]();
 		} catch(e) {}
+	}
+}
+
+function shutdownButtons() {
+	for(var i = 0; i < gButtonIds.length; i++) {
+		CustomizableUI.destroyWidget(gButtonIds[i]);
 	}
 }
 

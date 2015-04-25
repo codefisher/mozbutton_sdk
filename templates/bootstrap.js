@@ -12,6 +12,8 @@ const Cu = Components.utils;
 Cu.import("resource://gre/modules/Services.jsm");
 var styleSheets = [Services.io.newURI("chrome://{{chrome_name}}/skin/button.css", null, null)];
 
+var gModules = {};
+
 function getModules(uri) {
 	var modules = [];
 	{{loaders}}
@@ -27,12 +29,20 @@ function loadIntoWindow(window) {
 			try {
 				window.QueryInterface(Ci.nsIInterfaceRequestor)
 					.getInterface(Ci.nsIDOMWindowUtils).loadSheet(styleSheets[i], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
-			} catch(e) {} // throws error is there had been an unclean shutdown and the sheet is still loaded
+			} catch(e) {
+				// throws error is there had been an unclean shutdown and the sheet is still loaded
+			}
 		}
 		for(var i = 0; i < modules.length; i++) {
 			try {
-				var mod = Cu.import(modules[i]);
-				mod.setupButtons();
+				var modPath = modules[i];
+				if(gModules[modPath]) {
+					var mod = gModules[modPath];
+				} else {
+					var mod = Cu.import(modPath);
+					mod.setupButtons();
+					gModules[modPath] = mod;
+				}
 				mod.loadButtons(window);
 			} catch(e) {
 				window.console.log(e);
@@ -57,9 +67,11 @@ function unloadFromWindow(window) {
 		}
 		for(var i = 0; i < modules.length; i++) {
 			try {
-				var mod = Cu.import(modules[i]);
-				mod.unloadButtons(window);
-				Cu.unload(modules[i]); // makes next call to import get a new object
+				var modPath = modules[i];
+				if(gModules[modPath]) {
+					var mod = gModules[modPath];
+					mod.unloadButtons(window);
+				}
 			} catch(e) {
 				window.console.log(e);
 			}
@@ -108,7 +120,6 @@ function startup(data, reason) {
 		let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
 		loadIntoWindow(domWindow);
 	}
-
 	// Load into any new windows
 	wm.addListener(windowListener);
 }
@@ -132,6 +143,13 @@ function shutdown(data, reason) {
 		let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
 		unloadFromWindow(domWindow);
 	}
+	// destroy the modules
+	for(var modPath in gModules) {
+		var mod = gModules[modPath];
+		mod.shutdownButtons();
+		Cu.unload(modPath);
+	}
+	gModules = {};
 	Cu.unload("chrome://{{chrome_name}}/content/customizable.jsm");
 }
 
