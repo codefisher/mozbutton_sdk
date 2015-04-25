@@ -1,3 +1,8 @@
+/*
+ * This file was writen by Michael Buckley as part of the Toolbar Buttons
+ * project https://codefisher.org/toolbar_button/
+ */
+
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 const Cu = Components.utils;
