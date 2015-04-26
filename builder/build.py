@@ -161,8 +161,10 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
         xpi.writestr(os.path.join("chrome", file_name), data)
     if settings.get("icon"):
         xpi.write(get_image(settings, "32", settings.get("icon")), "icon.png")
+        xpi.write(get_image(settings, "32", settings.get("icon")), os.path.join("chrome", "skin", "icon.png"))
     else:
         xpi.write(os.path.join(settings.get("project_root"), "files", "icon.png"), "icon.png")
+        xpi.write(os.path.join(settings.get("project_root"), "files", "icon.png"), os.path.join("chrome", "skin", "icon.png"))
     xpi.writestr("chrome.manifest", create_manifest(settings, locales, buttons, has_resources, option_applicaions))
     xpi.writestr("install.rdf", create_install(settings, buttons.get_suported_applications(), option_applicaions))
     if settings.get('restartless'):
@@ -233,11 +235,6 @@ def create_manifest(settings, locales, buttons, has_resources, options=[]):
         lines.append("style\tchrome://global/content/customizeToolbar.xul"
                  "\tchrome://%(chrome)s/skin/button.css" % values)
 
-    lines.append("content\t%(chrome)s-root\t./" % values)
-    lines.append("skin\t%(chrome)s-root\tclassic/1.0\t./" % values)
-
-    lines.append("override\tchrome://%(chrome)s/skin/icon.png\t"
-                 "chrome://%(chrome)s-root/skin/icon.png" % values)
     if has_resources and not settings.get('restartless'):
         lines.append("resource\t%(chrome)s\tchrome://%(chrome)s/content/resources/" % values)
     for option in options:
