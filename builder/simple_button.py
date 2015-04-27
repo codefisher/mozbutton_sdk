@@ -1,6 +1,6 @@
 import os
 import re
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 try:
     unicode
@@ -11,6 +11,8 @@ try:
     from PIL import Image
 except ImportError:
     pass
+
+XulData = namedtuple("XulData", ['folder', 'button', 'xul_file', 'file_name'])
 
 def get_image(settings, size, name):
     if isinstance(settings.get("image_path"), str):
@@ -73,7 +75,7 @@ class SimpleButton(object):
                                    ).intersection(self._applications):
                                 if self._settings.get("extended_buttons") and ("extended_%s" % xul_file) in files:
                                     xul_file = "extended_%s" % xul_file
-                                xul_data.append((folder, button,
+                                xul_data.append(XulData(folder, button,
                                                        xul_file, file_name))
                                 xul_files.append(os.path.join(folder, xul_file))
                                 button_wanted = True
@@ -85,7 +87,7 @@ class SimpleButton(object):
                                    ).intersection(self._applications)):
                     if self._settings.get("extended_buttons") and ("extended_%s" % xul_file) in files:
                         xul_file = "extended_%s" % xul_file
-                    xul_data.append((folder, button, xul_file, file_name))
+                    xul_data.append(XulData(folder, button, xul_file, file_name))
                     xul_files.append(os.path.join(folder, xul_file))
                     button_wanted = True
 
@@ -112,7 +114,13 @@ class SimpleButton(object):
                 self._button_names.remove(button)
                 continue
             else:
-                for item in xul_data:
+                group_files = list(reversed(self._settings.get("file_map_keys")))
+                def sort_order(item):
+                    try:
+                        return group_files.index(item.xul_file[:-4])
+                    except ValueError:
+                        return -1
+                for item in sorted(xul_data, key=sort_order):
                     self._process_xul_file(*item)
                 self._info.append((folder, button, files))
                 self._button_folders[button] = folder
