@@ -142,6 +142,9 @@ class SimpleButton(object):
     def __len__(self):
         return len(self._buttons)
 
+    def __contains__(self, item):
+        return item in self._buttons
+
     def _process_xul_file(self, folder, button, xul_file, file_name):
         application = self._settings.get("file_to_application")[file_name]
         self._button_windows[button].append(file_name)
