@@ -10,9 +10,9 @@ def create_folder(path):
         os.makedirs(path)
 
 def main():
-    try:
+    if len(sys.argv) > 1:
         path = sys.argv[1]
-    except:
+    else:
         print("Please give the location of where you want to start the probject")
         exit()
     create_folder(path)
