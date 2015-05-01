@@ -138,7 +138,8 @@ config = {
         "mail-address-book": ("chrome://messenger/content/addressbook/addressbook.xul", )
     },
     "file_to_application": {
-         "browser": ("browser", "suite"),
+         "browser": ("browser",),
+         "portal": ("browser", ),
          "messenger": ("messenger", "suite"),
          "mail": ("messenger", "suite"),
          "compose": ("messenger", "suite"),
