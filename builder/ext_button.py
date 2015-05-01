@@ -35,6 +35,7 @@ class Button(SimpleButton):
         self._preferences = {}
         self._button_options = {}
         self._button_options_js = {}
+        self._application_button_options = defaultdict(dict)
         self._option_applications = set()
         self._has_javascript = False
         self._manifest = []
@@ -84,6 +85,12 @@ class Button(SimpleButton):
             if self._settings.get("extra_options") and "extended_option.xul" in files:
                 with open(os.path.join(folder, "extended_option.xul"), "r") as option:
                     self._button_options[button] = (option.readline(), option.read())
+            for file_name in files:
+                if file_name.endswith('_option.xul'):
+                    application = file_name[0:-11]
+                    if application in self._settings.get("applications_data"):
+                        with open(os.path.join(folder, file_name), "r") as option:
+                            self._application_button_options[button][application] = (option.readline(), option.read())
             if "option.js" in files:
                 with open(os.path.join(folder, "option.js"), "r") as option:
                     self._button_options_js[button] = option.read()
@@ -172,7 +179,13 @@ class Button(SimpleButton):
                     self._button_applications["%s-menu-item" % button] = self._applications
         files = defaultdict(dict)
         def append(files, application, first, data):
-            title, _, icon = first.strip().partition(':')
+            meta = first.strip().split(':')
+            if len(meta) == 2:
+                title, icon = meta
+            else:
+                title, icon, appslist = meta
+                if application not in appslist.split():
+                    return
             if title in files[application]:
                 files[application][title]['data'].append(data)
             else:
@@ -180,6 +193,9 @@ class Button(SimpleButton):
         for button, (first, data) in self._button_options.items():
             for application in self._button_applications[button]:
                 self._option_applications.add(application)
+                append(files, application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
+        for button, items in self._application_button_options.items():
+            for application, (first, data) in items.items():
                 append(files, application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
         if self._pref_list:
             limit = ".xul,".join(self._pref_list.keys()) + ".xul"
