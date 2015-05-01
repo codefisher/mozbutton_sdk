@@ -167,6 +167,7 @@ config = {
         "messenger": ("mail", "compose", "read"),
         "calendar": ("lightning", "calendar"),
         "browser": ("browser", "suite_browser"),
+        "portal": ("browser", ) # causes them to load into Firefox but not SeaMonkey
     },
      # order is important
     "file_map_keys": ["loader","button", "messenger", "calendar", "browser"],
