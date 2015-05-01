@@ -67,11 +67,11 @@ class SimpleButton(object):
                 xul_file = group_name + ".xul"
                 if xul_file in files:
                     for file_name in self._settings.get("file_map")[group_name]:
-                        for exclude in self._settings.get("file_exclude").get(file_name, []):
+                        for exclude in self._settings.get("file_exclude").get(file_name, ()):
                             if exclude + ".xul" in files:
                                 break
                         else:
-                            if set(self._settings.get("file_to_application")[file_name]
+                            if set(self._settings.get("file_to_application").get(file_name, ())
                                    ).intersection(self._applications):
                                 if self._settings.get("extended_buttons") and ("extended_%s" % xul_file) in files:
                                     xul_file = "extended_%s" % xul_file
