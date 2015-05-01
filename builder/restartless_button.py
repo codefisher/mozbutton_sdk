@@ -249,7 +249,7 @@ class RestartlessButton(Button):
             js_includes = []
             for js_file in self._get_js_file_list(file_name):
                 if js_file != "loader" and js_file in self._included_js_files:
-                    js_includes.append("""loader.loadSubScript("chrome://%s/content/%s.js", scope);""" % (self._settings.get("chrome_name"), js_file))
+                    js_includes.append("""loader.loadSubScript("chrome://%s/content/%s.js", gScope);""" % (self._settings.get("chrome_name"), js_file))
             toolbars, toolbar_ids = self._create_jsm_toolbar(button_hash, toolbar_template, file_name, values)
             count = 0
             modules = set()
@@ -267,13 +267,13 @@ class RestartlessButton(Button):
                 menu_id, menu_label, _ = self._settings.get("menu_meta")
             else:
                 menu_id, menu_label = "", ""
-            end = []
+            end = set()
             menu = self._jsm_create_menu(file_name, values)
             for js_file in set(self._get_js_file_list(file_name) + [file_name]):
                 if self._button_js_setup.get(js_file, {}):
-                    end.extend(self._button_js_setup[js_file].values())
+                    end.update(self._button_js_setup[js_file].values())
             if self._settings.get("menuitems") and menu:
-                end.append("toolbar_buttons.setUpMenuShower(document);")
+                end.add("toolbar_buttons.setUpMenuShower(document);")
             result[file_name] = (template.replace('{{locale-file-prefix}}', self._settings.get("locale_file_prefix"))
                         .replace('{{modules}}', modules_import)
                         .replace('{{scripts}}', "\n\t".join(js_includes))

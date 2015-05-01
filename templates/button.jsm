@@ -47,7 +47,6 @@ var gScope = this;
 var buttonStrings = new StringBundle("chrome://{{chrome_name}}/locale/{{locale-file-prefix}}button_labels.properties?time=" + Date.now().toString());
 
 function setupButtons() {
-	var scope = Object.create(gScope);
 	{{scripts}}
 	{{buttons}}
 }
