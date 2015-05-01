@@ -135,6 +135,7 @@ function unloadButtons(window) {
 }
 
 function shutdownButtons() {
+	log(gButtonIds);
 	for(var i = 0; i < gButtonIds.length; i++) {
 		CustomizableUI.destroyWidget(gButtonIds[i]);
 	}
@@ -168,4 +169,8 @@ function observeToolbar(window, document, toolbar_id) {
 		toolbar.setAttribute(attrList[i], prefs.getCharPref(attrList[i]));
 	}
 	mutationObserver.observe(toolbar, { attributes: true, subtree: false });
+}
+
+function log(e) {
+	Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService).logStringMessage(e);
 }

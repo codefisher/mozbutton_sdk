@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 /*
  * This file was writen by Michael Buckley as part of the Toolbar Buttons
  * project https://codefisher.org/toolbar_button/
@@ -41,12 +45,17 @@ this.CustomizableUI = {
 				var toolboxes = document.getElementsByTagName('toolbox');
 				for(var t = 0; t < toolboxes.length; t++) {
 					try {
-						var toolbox = toolboxes[i];
+						var toolbox = toolboxes[t];
+						if(!toolbox.palette) {
+							continue;
+						}
 						var buttons = toolbox.palette.getElementsByAttribute('id', aWidgetId);
 						for (var i = 0; i < buttons.length; i++) {
 							toolbox.palette.removeChild(buttons[i]);
 						}
-					} catch(e) {}
+					} catch(e) {
+						log(e);
+					}
 				}
 			}
 		});
@@ -456,9 +465,13 @@ function callWithEachWindow(func) {
 		try {
 			func(domWindow);
 		} catch(e) {
-			domWindow.console.log(e);
+			log(e);
 		}
 	}
+}
+
+function log(e) {
+	Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService).logStringMessage(e);
 }
 
 var windowListener = {

@@ -140,14 +140,22 @@ function shutdown(data, reason) {
 	// Unload from any existing windows
 	let windows = wm.getEnumerator(null);
 	while (windows.hasMoreElements()) {
-		let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
-		unloadFromWindow(domWindow);
+		try {
+			let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
+			unloadFromWindow(domWindow);
+		} catch(e) {
+			log(e);
+		}
 	}
 	// destroy the modules
 	for(var modPath in gModules) {
-		var mod = gModules[modPath];
-		mod.shutdownButtons();
-		Cu.unload(modPath);
+		try {
+			var mod = gModules[modPath];
+			mod.shutdownButtons();
+			Cu.unload(modPath);
+		} catch(e) {
+			log(e);
+		}
 	}
 	gModules = {};
 	Cu.unload("chrome://{{chrome_name}}/content/customizable.jsm");
@@ -158,6 +166,10 @@ function install(data, reason) {
 }
 
 function uninstall(data, reason) {
+}
+
+function log(e) {
+	Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService).logStringMessage(e);
 }
 
 function getGenericPref(branch, prefName) {
