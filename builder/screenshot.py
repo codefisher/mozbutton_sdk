@@ -33,7 +33,7 @@ def create_screenshot(settings):
     rows = int(math.ceil(float(len(icons))/icons_per_row))
     top_image = Image.open(os.path.join("files", "top.png"))
     toolbar_image = Image.open(os.path.join("files", "toolbar-back.png"))
-    app_icon = Image.open(os.path.join("files", "icons", "%s.png" % application))
+    app_icon = Image.open(os.path.join("files", "icons", "{}.png".format(application)))
     if app_icon.mode != 'RGBA':
         app_icon = app_icon.convert('RGBA')
 
@@ -62,5 +62,6 @@ def create_screenshot(settings):
         icon_img = Image.open(button.get_image(settings, settings.get("icon_size")[0], icon))
         image.paste(icon_img, (4 + (i % icons_per_row) * (icons_size + 8), (i // icons_per_row * toolbar_height)+top_height+(toolbar_height-icons_size)/2), icon_img)
 
-    file_name = os.path.join(settings.get("project_root"), settings.get("output_folder"), settings.get("output_file", "%s.png" % "".join(settings.get("applications"))))
+    image_name = settings.get("output_file", "{}.png".format("".join(settings.get("applications"))))
+    file_name = os.path.join(settings.get("project_root"), settings.get("output_folder"), image_name)
     image.save(file_name, "png")
