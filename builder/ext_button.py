@@ -21,6 +21,7 @@ except NameError:
     basestring = str #py3
 
 Menuitem = namedtuple('Menuitem', ['node', 'parent_id', 'insert_after'])
+string_match = re.compile(r"StringFromName\(\"([a-zA-Z0-9.-]*?)\"")
 
 class Button(SimpleButton):
     def __init__(self, folders, buttons, settings, applications):
@@ -98,6 +99,9 @@ class Button(SimpleButton):
                 for file in os.listdir(os.path.join(folder, "files")):
                     if file[0] != ".":
                         self._extra_files[file] = os.path.join(folder, "files", file)
+                        if file[-3:] == ".js" or file[-4:] == '.jsm':
+                            with open(os.path.join(folder, "files", file), "r") as js_fp:
+                                self._properties_strings.update(string_match.findall(js_fp.read()))
             if "file_list" in files:
                 with open(os.path.join(folder, "file_list"), "r") as file_list:
                     for file in file_list:
@@ -459,21 +463,18 @@ class Button(SimpleButton):
 
     def get_js_files(self):
        
-        interface_match = re.compile("(?<=toolbar_buttons.interfaces.)[a-zA-Z]*")
-        function_match = re.compile("^[a-zA-Z0-9_]*\s*:\s*"
-                                    "(?:function\([^\)]*\)\s*)?{.*?^}[^\n]*",
+        interface_match = re.compile(r"(?<=toolbar_buttons.interfaces.)[a-zA-Z]*")
+        function_match = re.compile(r"^[a-zA-Z0-9_]*\s*:\s*(?:function\([^\)]*\)\s*)?{.*?^}[^\n]*",
                                     re.MULTILINE | re.DOTALL)
-        function_name_match = re.compile("((^[a-zA-Z0-9_]*)\s*:\s*"
-                                         "(?:function\s*\([^\)]*\)\s*)?{.*?^})",
+        function_name_match = re.compile(r"((^[a-zA-Z0-9_]*)\s*:\s*(?:function\s*\([^\)]*\)\s*)?{.*?^})",
                                           re.MULTILINE | re.DOTALL)
-        include_match = re.compile("(?<=^#include )[a-zA-Z0-9_]*",
+        include_match = re.compile(r"(?<=^#include )[a-zA-Z0-9_]*",
                                    re.MULTILINE)
-        include_match_replace = re.compile("^#include [a-zA-Z0-9_]*\n?",
+        include_match_replace = re.compile(r"^#include [a-zA-Z0-9_]*\n?",
                                            re.MULTILINE)
-        detect_depandancy = re.compile("(?<=toolbar_buttons.)[a-zA-Z]*")
-        string_match = re.compile("StringFromName\(\"([a-zA-Z0-9.-]*?)\"")
+        detect_depandancy = re.compile(r"(?<=toolbar_buttons.)[a-zA-Z]*")
 
-        multi_line_replace = re.compile("\n{2,}")
+        multi_line_replace = re.compile(r"\n{2,}")
         js_files = defaultdict(str)
         js_includes = set()
         js_options_include = set()

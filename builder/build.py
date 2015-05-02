@@ -128,6 +128,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
         with codecs.open(path, encoding='utf-8') as fp:
             xpi.writestr(os.path.join("chrome", "content", "files", name), 
                          bytes_string(fp.read().replace("{{chrome_name}}", settings.get("chrome_name"))
+                            .replace("{{pref_root}}", settings.get("pref_root"))
                             .replace("{{locale_file_prefix}}", settings.get("locale_file_prefix"))))
     resources = buttons.get_resource_files()
     has_resources = bool(resources)
