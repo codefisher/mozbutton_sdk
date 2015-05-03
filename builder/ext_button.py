@@ -5,6 +5,7 @@ import math
 import hashlib
 import codecs
 from collections import defaultdict
+from itertools import chain
 from builder import grayscale
 from builder.util import get_pref_folders
 from collections import namedtuple
@@ -59,8 +60,11 @@ class Button(SimpleButton):
             for file_name in (self._window_files + self._app_files):
                 js_file = file_name + ".js"
                 if (file_name == "button"
-                         or set(self._settings.get("file_to_application").get(file_name, [])
-                                   ).intersection(self._applications)):
+                        or set(self._settings.get("file_to_application").get(file_name, [])
+                                    ).intersection(self._applications)
+                        or set(chain(*(self._settings.get("file_to_application").get(name, [])
+                                        for name in self._settings.get("file_map").get(file_name, [])))
+                                    ).intersection(self._applications)):
                     if js_file in files:
                         with open(os.path.join(folder, js_file)) as js:
                             self._button_js[file_name][button] = js.read()
@@ -462,7 +466,6 @@ class Button(SimpleButton):
         return "\n".join(lines), image_list, image_datas
 
     def get_js_files(self):
-       
         interface_match = re.compile(r"(?<=toolbar_buttons.interfaces.)[a-zA-Z]*")
         function_match = re.compile(r"^[a-zA-Z0-9_]*\s*:\s*(?:function\([^\)]*\)\s*)?{.*?^}[^\n]*",
                                     re.MULTILINE | re.DOTALL)
@@ -488,7 +491,7 @@ class Button(SimpleButton):
             js_imports.add("sortMenu")
             js_imports.add("handelMenuLoaders")
             js_imports.add("setUpMenuShower")
-        
+
         for file_name, js in self._button_js.items():
             js_file = "\n".join(js.values())
             js_includes.update(include_match.findall(js_file))
