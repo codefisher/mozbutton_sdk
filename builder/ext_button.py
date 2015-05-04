@@ -284,6 +284,8 @@ class Button(SimpleButton):
         strings.append("options.window.title")
         for first, value in self._button_options.values():
             strings.extend(locale_match.findall(value))
+        for first, value in chain(*(item.values() for item in self._application_button_options.values())):
+            strings.extend(locale_match.findall(value))
         return list(set(strings))
 
     def get_defaults(self, format_dict=False):
