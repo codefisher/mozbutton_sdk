@@ -62,8 +62,8 @@ class Button(SimpleButton):
                 if (file_name == "button"
                         or set(self._settings.get("file_to_application").get(file_name, [])
                                     ).intersection(self._applications)
-                        or set(chain(*(self._settings.get("file_to_application").get(name, [])
-                                        for name in self._settings.get("file_map").get(file_name, [])))
+                        or set(chain.from_iterable(self._settings.get("file_to_application").get(name, [])
+                                        for name in self._settings.get("file_map").get(file_name, []))
                                     ).intersection(self._applications)):
                     if js_file in files:
                         with open(os.path.join(folder, js_file)) as js:
@@ -284,7 +284,7 @@ class Button(SimpleButton):
         strings.append("options.window.title")
         for first, value in self._button_options.values():
             strings.extend(locale_match.findall(value))
-        for first, value in chain(*(item.values() for item in self._application_button_options.values())):
+        for first, value in chain.from_iterable(item.values() for item in self._application_button_options.values()):
             strings.extend(locale_match.findall(value))
         return list(set(strings))
 

@@ -116,6 +116,6 @@ def create_update_rdf(config):
                         </em:targetApplication>""" % config.get("update_file")
                         
     updates = []
-    for data in itertools.chain(*config.get("applications_data").values()):
+    for data in itertools.chain.from_iterable(config.get("applications_data").values()):
         updates.append(update_xml % tuple(data))
     return xml % (config.get("extension_id"), config.get("version"), "\n".join(updates))
