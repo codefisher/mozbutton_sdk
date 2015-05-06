@@ -229,45 +229,44 @@ def create_manifest(settings, locales, buttons, has_resources, options=[]):
     lines = []
     values = {"chrome": settings.get("chrome_name")}
 
-    lines.append("content\t%(chrome)s\tchrome/content/" % values)
-    lines.append("skin\t%(chrome)s\tclassic/1.0\t"
-                 "chrome/skin/" % values)
+    lines.append("content\t{chrome}\tchrome/content/".format(**values))
+    lines.append("skin\t{chrome}\tclassic/1.0\tchrome/skin/".format(**values))
     if not settings.get('restartless'):
         lines.append("style\tchrome://global/content/customizeToolbar.xul"
-                 "\tchrome://%(chrome)s/skin/button.css" % values)
+                 "\tchrome://{chrome}/skin/button.css".format(**values))
 
     if has_resources and not settings.get('restartless'):
-        lines.append("resource\t%(chrome)s\tchrome://%(chrome)s/content/resources/" % values)
+        lines.append("resource\t{chrome}\tchrome://{chrome}/content/resources/".format(**values))
     for option in options:
         values["application"] = option
         for _, application_id, _, _ in settings.get("applications_data")[option]:
             values["id"] = application_id
-            lines.append("override\tchrome://%(chrome)s/content/options.xul\t"
-                         "chrome://%(chrome)s/content/%(application)s"
-                         "-options.xul\tapplication=%(id)s" % values)
+            lines.append("override\tchrome://{chrome}/content/options.xul\t"
+                         "chrome://{chrome}/content/{application}"
+                         "-options.xul\tapplication={id}".format(**values))
 
     if not settings.get('restartless'):
         for file_name in buttons.get_file_names():
             values["file"] = file_name
             for overlay in settings.get("files_to_overlay").get(file_name, ()):
                 values["overlay"] = overlay
-                lines.append("overlay\t%(overlay)s\t"
-                             "chrome://%(chrome)s/content/%(file)s.xul" % values)
+                lines.append("overlay\t{overlay}\t"
+                             "chrome://{chrome}/content/{file}.xul".format(**values))
     manifest = buttons.get_manifest()
     if manifest:
-        lines.append(manifest % values)
+        lines.append(manifest.format(**values))
 
     for locale in locales:
         values["locale"] = locale
-        lines.append("locale\t%(chrome)s\t%(locale)s"
-                     "\tchrome/locale/%(locale)s/" % values)
+        lines.append("locale\t{chrome}\t{locale}"
+                     "\tchrome/locale/{locale}/".format(**values))
     return "\n".join(lines)
 
 def create_install(settings, applications, options=[]):
     """Creates the install.rdf file for the extension"""
     if options:
-        options_url = ("\t\t<em:optionsURL>chrome://%s/content/options.xul"
-                       "</em:optionsURL>\n" % settings.get("chrome_name"))
+        options_url = ("\t\t<em:optionsURL>chrome://{}/content/options.xul"
+                       "</em:optionsURL>\n".format(settings.get("chrome_name")))
     else:
         options_url = ""
     if settings.get("restartless"):
