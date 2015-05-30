@@ -549,6 +549,8 @@ class Button(SimpleButton):
                         js_files[file_name] = end
         if self._button_options_js:
             extra_javascript = []
+            for button, (first, data) in self._button_options.items():
+                js_options_include.update(detect_depandancy.findall(data))
             for button, value in self._button_options_js.items():
                 #TODO: dependency resolution is not enabled here yet
                 js_options_include.update(include_match.findall(value))
