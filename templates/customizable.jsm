@@ -283,7 +283,7 @@ function restoreToToolbar(toolbox, aWidgetId) {
 	let document = toolbox.ownerDocument;
 	let potentialToolbars = Array.slice(toolbox.getElementsByTagName('toolbar'));
 	if(toolbox.externalToolbars) {
-		potentialToolbars.concat(toolbox.externalToolbars);
+		potentialToolbars = potentialToolbars.concat(toolbox.externalToolbars);
 	}
 	for(var i = 0; i < potentialToolbars.length; i++) {
 		var toolbar = potentialToolbars[i];
@@ -320,7 +320,7 @@ function restoreToToolbar(toolbox, aWidgetId) {
 				document.persist(toolbar.id, 'currentset');
 				return true;
 			} catch(e) {
-				Components.utils.reportError(e);
+				log(e);
 			}
 		}
 	}
@@ -404,7 +404,7 @@ function addWidgetToWindow(window, aProperties) {
 			}
 		}
 	} catch (e) {
-		Components.utils.reportError(e);
+		log(e);
 	}
 }
 
@@ -471,6 +471,9 @@ function callWithEachWindow(func) {
 }
 
 function log(e) {
+	try {
+		Components.utils.reportError(e);
+	} catch(x) {}
 	Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService).logStringMessage(e);
 }
 
