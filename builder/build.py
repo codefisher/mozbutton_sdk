@@ -10,6 +10,9 @@ from builder.app_versions import get_app_versions
 import codecs
 from collections import defaultdict
 
+class ExtensionConfigError(Exception):
+    pass
+
 def bytes_string(string):
     try:
         if type(string) == unicode:
@@ -70,6 +73,8 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
         button_locales = Locale(settings, local_obj=button_locales)
         locales = button_locales.get_locales()
     buttons = get_buttons(settings)
+    if len(buttons.buttons()) == 0:
+        raise ExtensionConfigError("The selected config would have no buttons.")
     
     xpi_file_name = os.path.join(settings.get("project_root"), settings.get("output_folder"), settings.get("output_file", "toolbar_buttons.xpi") % settings)
     if output:
