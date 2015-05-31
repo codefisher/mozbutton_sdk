@@ -114,6 +114,8 @@ class RestartlessButton(Button):
                 other = " + '%s%s'" % (sep, other) if sep else ""
                 value = "buttonStrings.get('%s')%s" % (name, other)
                 statements.append("%s_%s.setAttribute('%s', %s);" % ((root.tag, num, key, value)))
+            elif key == "type" and value == "menu-button" and 'id' in root.attrib:
+                statements.append('''if(extensionPrefs.getPrefType('menupopup.hide.{0}') != extensionPrefs.PREF_INVALID && !extensionPrefs.getBoolPref('menupopup.hide.{0}')) {{\n\t\t\t\t{1}_{2}.setAttribute("{3}", "{4}");\n\t\t\t}}'''.format(root.attrib['id'], root.tag, num, key, value))
             else:
                 statements.append('%s_%s.setAttribute("%s", "%s");' % ((root.tag, num, key, value)))
         for node in root:
