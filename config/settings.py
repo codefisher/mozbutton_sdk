@@ -101,18 +101,18 @@ config = {
     # the below sets application support
     "applications_data": {
         "browser":   (
-                      ("Firefox", "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}", "20.0", "38.0"),
+                      ("Firefox", "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}", "20.0", "42.0"),
                       ("Pale Moon", "{8de7fcbb-c55c-4fbe-bfc5-fc555c87dbc4}", "20.0", "25.*")
                       ),
         "messenger": (
-                      ("Thunderbird", "{3550f703-e582-4d05-9a08-453d09bdfdc6}","20.0", "38.0"),
+                      ("Thunderbird", "{3550f703-e582-4d05-9a08-453d09bdfdc6}","20.0", "42.0"),
                       ("Postbox", "postbox@postbox-inc.com", "1.0.0", "3.0.*")
                       ),
         #"calendar":  (
         #              ("Sunbird", "{718e30fb-e89b-41dd-9da7-e25a45638b28}", "1.0b1", "1.0pre"),
         #              ),
         "suite": (
-                      ("SeaMonkey", "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}", "2.20", "2.38"),
+                      ("SeaMonkey", "{92650c4d-4b8e-4d2a-b7eb-24ecf4f6b63a}", "2.20", "2.39"),
                       ),
     },
     "files_to_overlay": {
