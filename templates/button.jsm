@@ -58,6 +58,7 @@ function loadButtons(window) {
 	if(!toolbox) {
 		return;
 	}
+	var extensionPrefs = Cc['@mozilla.org/preferences-service;1'].getService(Ci.nsIPrefService).getBranch("extension.tbutton.");
 	{{toolbars}}
 	registerToolbars(window, document, {{toolbar_ids}});
 	{{menu}}
