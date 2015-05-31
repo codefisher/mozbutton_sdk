@@ -171,7 +171,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     else:
         xpi.write(os.path.join(settings.get("project_root"), "files", "icon.png"), "icon.png")
         xpi.write(os.path.join(settings.get("project_root"), "files", "icon.png"), os.path.join("chrome", "skin", "icon.png"))
-    xpi.writestr("chrome.manifest", create_manifest(settings, locales, buttons, has_resources, option_applicaions))
+    xpi.writestr("chrome.manifest", create_manifest(settings, locales_inuse, buttons, has_resources, option_applicaions))
     xpi.writestr("install.rdf", create_install(settings, buttons.get_suported_applications(), option_applicaions))
     if settings.get('restartless'):
         xpi.writestr("bootstrap.js", create_bootstrap(settings, buttons, has_resources))
