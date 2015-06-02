@@ -181,10 +181,12 @@ class Button(SimpleButton):
                         menu_option_tempate.replace("{{menu_id}}", menu_id).replace("{{menu_label}}", menu_label))
                 self._button_applications[menu_id] = self._applications
             else:
+                menu_placement = self._settings.get("menu_placement")
                 for button in self._buttons:
-                    self._button_options["%s-menu-item" % button] = ("tb-show-a-menu.option.title:menu.png", 
-                        menu_option_tempate.replace("{{menu_id}}", "%s-menu-item" % button).replace("{{menu_label}}", "%s.label" % button))
-                    self._button_applications["%s-menu-item" % button] = self._applications
+                    if type(menu_placement) != dict or button in menu_placement:
+                        self._button_options["%s-menu-item" % button] = ("tb-show-a-menu.option.title:menu.png",
+                            menu_option_tempate.replace("{{menu_id}}", "%s-menu-item" % button).replace("{{menu_label}}", "%s.label" % button))
+                        self._button_applications["%s-menu-item" % button] = self._applications
         files = defaultdict(dict)
         def append(files, application, first, data):
             meta = first.strip().split(':')
