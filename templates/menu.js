@@ -5,6 +5,7 @@
 	} else {
 		menu_1 = document.createElement('menu');
 		menu_1.id = '%(menu_id)s';
+		menu_1.classList.add('%(class)s');
 		menu_1.setAttribute('label', buttonStrings.get('%(label)s'));
 		var menupopup_2 = document.createElement('menupopup');
 		menupopup_2.id = '%(menu_id)s-popup';

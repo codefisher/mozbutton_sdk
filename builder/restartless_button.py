@@ -45,6 +45,7 @@ class RestartlessButton(Button):
                 "menu_name": menu_name,
                 "menu_id": menu_id,
                 "label": menu_label,
+                "class": "menu-iconic",
                 "menu_label": menu_label,
                 "insert_after": insert_after
             })

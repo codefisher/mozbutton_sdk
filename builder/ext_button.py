@@ -323,7 +323,7 @@ class Button(SimpleButton):
             icon_size["window"] = "32"
         else:
             icon_size["window"] = small if int(small) >= 32 else large
-        if self._settings.get('menuitems'):
+        if self._settings.get('menuitems') or (self._settings.get("icon") and self._settings.get("menu_meta")):
             icon_size["menu"] = "16"
         return icon_size
 
@@ -340,6 +340,9 @@ class Button(SimpleButton):
         icon_sizes = self.get_icon_size()
         icon_size_set = set(icon_sizes.values())
         image_map = {}
+        group_menu_name = self._settings.get("menu_meta")[0] if self._settings.get("menu_meta") else None
+        if self._settings.get("icon") and group_menu_name:
+            self._button_image[group_menu_name] = [(self._settings.get("icon"), '')]
         if self._settings.get("merge_images"):
             image_set = list()
             for button, image_data in self._button_image.items():
@@ -426,8 +429,12 @@ class Button(SimpleButton):
                     elif name == "large":
                         selectors[size].append("toolbar toolbarbutton#%s%s" % (button, modifier))
                     elif name == "menu":
-                        selectors[size].append("menu#%s-menu-item%s" % (button, modifier))
-                        selectors[size].append("menuitem#%s-menu-item%s" % (button, modifier))
+                        if button == group_menu_name:
+                            selectors[size].append("menu#%s" % button)
+                            selectors[size].append("menuitem#%s" % button)
+                        else:
+                            selectors[size].append("menu#%s-menu-item%s" % (button, modifier))
+                            selectors[size].append("menuitem#%s-menu-item%s" % (button, modifier))
                     elif name == "window":
                         selectors[size].append("toolbarbutton#%s%s" % (button, modifier))
                 if self._settings.get("merge_images"):
