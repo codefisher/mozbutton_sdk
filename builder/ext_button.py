@@ -298,7 +298,7 @@ class Button(SimpleButton):
         if self._settings.get("show_updated_prompt") or self._settings.get("add_to_main_toolbar"):
             settings.append(("%s%s" % (self._settings.get("pref_root"), self._settings.get("current_version_pref")), "''"))
         if self._settings.get("menuitems"):
-            if self._settings.get("as_submenu") and self._settings.get("menu_meta"):
+            if self._settings.get("menu_placement") is None and self._settings.get("menu_meta"):
                 menu_id, menu_label, location = self._settings.get("menu_meta")
                 settings.append(("%sshowamenu.%s" % (self._settings.get("pref_root"), menu_id), self._settings.get("default_show_menu_pref")))
             else:
