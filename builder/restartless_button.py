@@ -154,7 +154,7 @@ class RestartlessButton(Button):
 			}"""
             data = {
                 "type": "'view'",
-                "onBeforeCreated": 'function (document) {\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(children),
+                "onBeforeCreated": 'function (document) {\n\t\t\tvar window = document.defaultView;\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(children),
             }
         else:
             statements, _, _ = self._create_dom(root)
@@ -202,7 +202,7 @@ class RestartlessButton(Button):
         data = []
         if re.search(r'\bthis\b', value):
             value = re.sub(r'\bthis\b', 'aThis', value)
-            data.append("var aThis = event.target;")
+            data.append("var aThis = event.currentTarget;")
         if re.search(r'\bdocument\b', value):
             data.append("var document = event.target.ownerDocument;")
         if re.search(r'\bwindow\b', value):
