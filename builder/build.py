@@ -152,11 +152,10 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
                 xpi.writestr(os.path.join("chrome", "locale", locale, "%soptions.dtd" % locale_prefix), bytes_string(data))
     option_applicaions = buttons.get_options_applications()
 
-    css, image_list, image_data = buttons.get_css_file()
-    icon_sizes = set(buttons.get_icon_size().values())
+    css, result_images, image_data = buttons.get_css_file()
     xpi.writestr(os.path.join("chrome", "skin", "button.css"), bytes_string(css))
-    for image in set(image_list):
-        for size in icon_sizes:
+    for size, image_list in result_images.items():
+        for image in set(image_list):
             if size is not None:
                 try:
                     xpi.write(get_image(settings, size, image), os.path.join("chrome", "skin", size, image))

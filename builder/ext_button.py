@@ -328,7 +328,7 @@ class Button(SimpleButton):
         return icon_size
 
     def get_css_file(self, toolbars=None):
-        image_list = []
+        result_images = defaultdict(set)
         image_datas = {}
         style_file = os.path.join(self._settings.get("project_root"), "files", "button.css")
         if not os.path.isfile(style_file):
@@ -341,13 +341,13 @@ class Button(SimpleButton):
         icon_size_set = set(icon_sizes.values())
         image_map = {}
         group_menu_name = self._settings.get("menu_meta")[0] if self._settings.get("menu_meta") else None
-        if self._settings.get("icon") and group_menu_name:
-            self._button_image[group_menu_name] = [(self._settings.get("icon"), '')]
+        if self._settings.get("icon") and self._settings.get('menu_placement') is None and group_menu_name:
+            self._button_image[group_menu_name] = [(self._settings.get("icon"), ' ')]
         if self._settings.get("merge_images"):
-            image_set = list()
+            image_set = set()
             for button, image_data in self._button_image.items():
                 for image, modifier in image_data:
-                    image_set.append(image)
+                    image_set.add(image)
             image_count = len(image_set)
             image_map_size = {}
             image_map_x = {}
@@ -367,6 +367,7 @@ class Button(SimpleButton):
         for button, image_data in self._button_image.items():
             values["id"] = button
             for image, modifier in image_data:
+                original_image = image
                 if image[0] == "*" or image[0] == "-":
                     name = list(image[1:].rpartition('.'))
                     name.insert(1, "-disabled")
@@ -382,12 +383,11 @@ class Button(SimpleButton):
                         print("image %s does not exist" % image)
                         continue
                     if self._settings.get("merge_images"):
-                        if image_map.get(_image):
+                        if image_map.get(_image) is not None:
                             offset = image_map.get(_image)
                         else:
                             offset = count
                             image_map[_image] = offset
-                            image_map = {}
                             for size in icon_size_set:
                                 if size is not None:
                                     image_map_size[size].paste(Image.open(io.BytesIO(data[size])), box_cmp(image_map_x[size], offset))
@@ -395,13 +395,13 @@ class Button(SimpleButton):
                     else:
                         offset = count
                         for size in icon_size_set:
-                            if size is not None:                            
+                            if size is not None:
                                 image_datas[os.path.join("skin", size, _image)] = data[size]
                         count += 1
                     image = _image
                 else:
                     if self._settings.get("merge_images"):
-                        if image_map.get(image):
+                        if image_map.get(image) is not None:
                             offset = image_map.get(image)
                         else:
                             try:
@@ -409,6 +409,9 @@ class Button(SimpleButton):
                                 image_map[image] = offset
                                 for size in icon_size_set:
                                     if size is not None:
+                                        # TODO: need to also check if this icon will never be needed
+                                        #if modifier and (modifier[0] == ' ' or modifier[0] == '$') and size != '16':
+                                        #    continue
                                         im = Image.open(get_image(self._settings, size, image))
                                         image_map_size[size].paste(im, box_cmp(image_map_x[size], offset))
                                 count += 1
@@ -418,10 +421,13 @@ class Button(SimpleButton):
                                 print("count not use image: %s" % image)
                     else:
                         offset = count
-                        image_list.append(image)
                         count += 1
                 selectors = dict((key, list()) for key in icon_size_set)
-                for name, size in icon_sizes.items():
+                if modifier and (modifier[0] == ' ' or modifier[0] == '$'):
+                    sizes = {'menuitem': '16'}
+                else:
+                    sizes = icon_sizes
+                for name, size in sizes.items():
                     if size is None:
                         continue
                     if name == "small":
@@ -435,11 +441,14 @@ class Button(SimpleButton):
                         else:
                             selectors[size].append("menu#%s-menu-item%s" % (button, modifier))
                             selectors[size].append("menuitem#%s-menu-item%s" % (button, modifier))
-                    elif name == "window":
-                        selectors[size].append("toolbarbutton#%s%s" % (button, modifier))
+                    elif name == "window" or name == 'menuitem':
+                        if modifier and modifier[0] == '$':
+                            selectors[size].append(modifier[1:])
+                        else:
+                            selectors[size].append("toolbarbutton#%s%s" % (button, modifier))
                 if self._settings.get("merge_images"):
                     for size in icon_size_set:
-                        if size is not None:
+                        if size is not None and len(selectors[size]):
                             values["size"] = size        
                             values["selectors"] = ", ".join(selectors[size])
                             left, top, right, bottom = box_cmp(image_map_x[size], offset)
@@ -450,7 +459,9 @@ class Button(SimpleButton):
                 else:
                     values["image"] = image
                     for size in icon_size_set:
-                        if size is not None:
+                        if size is not None and len(selectors[size]):
+                            if original_image[0] != "*" and original_image[0] != "-":
+                                result_images[size].add(image)
                             values["size"] = size
                             values["selectors"] = ", ".join(selectors[size])   
                             lines.append("""%(selectors)s {\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/%(image)s");"""
@@ -463,18 +474,19 @@ class Button(SimpleButton):
                     image_datas[os.path.join("skin", size, "button.png")] = size_io.getvalue()
                     size_io.close()
         if self._settings.get("include_toolbars"):
-            image_list.append("toolbar-button.png")
-            for name, selector in (('small', "toolbar[iconsize='small'] .toolbar-buttons-toolbar-toggle"), 
+            for name, selector in (('small', "toolbar[iconsize='small'] .toolbar-buttons-toolbar-toggle"),
                                    ('large', 'toolbar .toolbar-buttons-toolbar-toggle'), 
                                    ('window', '.toolbar-buttons-toolbar-toggle')):
                 if icon_sizes[name] is not None:
+                    result_images[icon_sizes[name]].add(self._settings.get("icon"))
                     lines.append(('''%(selector)s {'''
-                    '''\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/toolbar-button.png");'''
+                    '''\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/%(icon)s");'''
                     '''\n}''') % {"size": icon_sizes[name], "selector": selector,
+                       "icon": self._settings.get("icon"),
                        "chrome_name": self._settings.get("chrome_name")})
         for item in set(self._button_style.values()):
             lines.append(item)
-        return "\n".join(lines), image_list, image_datas
+        return "\n".join(lines), result_images, image_datas
 
     def get_js_files(self):
         interface_match = re.compile(r"(?<=toolbar_buttons.interfaces.)[a-zA-Z]*")
