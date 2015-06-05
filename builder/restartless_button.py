@@ -3,6 +3,7 @@ import re
 import json
 import codecs
 import lxml.etree as ET
+from copy import deepcopy
 try:
     from PIL import Image
 except ImportError:
@@ -155,6 +156,31 @@ class RestartlessButton(Button):
             data = {
                 "type": "'view'",
                 "onBeforeCreated": 'function (document) {\n\t\t\tvar window = document.defaultView;\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(children),
+            }
+        elif 'usepanelview' in root.attrib:
+            self._ui_ids.add("%s-panel-view" % root.attrib["id"])
+            statements, _, _ = self._create_dom(root)
+            root_clone = deepcopy(root)
+            if root.attrib['usepanelview'] == 'button-menu':
+                del root_clone.attrib["type"]
+                root_clone[0].insert(0, ET.Element("menuseparator"))
+                root_clone[0].insert(0, ET.Element("menuitem", root_clone.attrib))
+            for node in root_clone[0]:
+                node.attrib['class'] = 'subviewbutton'
+            _, _, children = self._create_dom(root_clone, child_parent="popupset", rename={'menuitem': 'toolbarbutton'}, append_children=False)
+            children.pop(0)
+            data = {
+                "type": "'custom'",
+                "onBuild": '''function (document) {
+			var window = document.defaultView;
+			var popupset = document.getElementById('PanelUI-multiView');
+			if(popupset) {
+				var menupopup_1 = document.createElement('panelview');
+				%s
+				menupopup_1.id = "%s-panel-view";
+			}
+			%s
+		}''' % ("\n\t\t\t\t".join(children), root.attrib['id'], "\n\t\t\t".join(statements))
             }
         else:
             statements, _, _ = self._create_dom(root)
