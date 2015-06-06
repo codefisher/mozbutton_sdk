@@ -55,7 +55,10 @@ def get_buttons(settings, cls=None):
         else:
             cls = OverlayButton
     menuitems = settings.get("menuitems")
-    if not menuitems:
+    menu_placement = settings.get("menu_placement")
+    if(type(menu_placement) == dict):
+        settings["menuitems"] = menu_placement.keys()
+    elif not menuitems:
         settings["menuitems"] = ()
     elif "all" in menuitems:
         settings["menuitems"] = button_names

@@ -183,7 +183,7 @@ class Button(SimpleButton):
             else:
                 menu_placement = self._settings.get("menu_placement")
                 for button in self._buttons:
-                    if type(menu_placement) != dict or button in menu_placement:
+                    if button in self._settings.get("menuitems") or (type(menu_placement) == dict and button in menu_placement):
                         self._button_options["%s-menu-item" % button] = ("tb-show-a-menu.option.title:menu.png",
                             menu_option_tempate.replace("{{menu_id}}", "%s-menu-item" % button).replace("{{menu_label}}", "%s.label" % button))
                         self._button_applications["%s-menu-item" % button] = self._applications
@@ -445,7 +445,8 @@ class Button(SimpleButton):
                         if modifier and modifier[0] == '$':
                             selectors[size].append(modifier[1:])
                         else:
-                            selectors[size].append("toolbarbutton#%s%s" % (button, modifier))
+                            selectors[size].append("#%s%s" % (button, modifier))
+                            selectors[size].append("#%s-menu-item%s" % (button, modifier))
                 if self._settings.get("merge_images"):
                     for size in icon_size_set:
                         if size is not None and len(selectors[size]):
