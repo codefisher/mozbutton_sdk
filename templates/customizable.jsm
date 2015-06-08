@@ -257,7 +257,32 @@ this.CustomizableUI = {
 		return false;
 	},
 	setToolbarVisibility: function(aToolbarId, aIsVisible) {
-		throw("setToolbarVisibility Not Implimented.");
+		let isFirstChangedToolbar = true;
+		callWithEachWindow(function (win) {
+			var doc = win.document;
+			var toolbar = doc.getElementById(aToolbarId);
+			if(!toolbar) {
+				return;
+			}
+			try {
+				win.setToolbarVisibility(toolbar, aIsVisible, isFirstChangedToolbar);
+			} catch(e) {
+				if (aIsVisible) {
+					if (toolbar.hasAttribute('hidden')) {
+						toolbar.setAttribute('hidden', 'false');
+						toolbar.setAttribute('collapsed', 'false');
+					} else {
+						toolbar.setAttribute('collapsed', 'false');
+					}
+				} else {
+					if (toolbar.hasAttribute('hidden')) {
+						toolbar.setAttribute('hidden', 'true');
+					} else {
+						toolbar.setAttribute('collapsed', 'true');
+					}
+				}
+			}
+		});
 	},
 	getPlaceForItem: function(aElement) {
 		throw("getPlaceForItem Not Implimented.");
