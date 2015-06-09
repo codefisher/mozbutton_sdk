@@ -5,7 +5,8 @@
   <!ENTITY % tbutton SYSTEM "chrome://{{chrome_name}}/locale/{{locale_file_prefix}}options.dtd"> %tbutton;
 ]>
 <?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
-<prefwindow id="tbutton-options"  
+<?xml-stylesheet href="chrome://{{chrome_name}}/skin/button.css" type="text/css"?>
+<prefwindow id="tbutton-options"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	persist="screenX screenY" title="&options.window.title;" >
 	{{options}}
