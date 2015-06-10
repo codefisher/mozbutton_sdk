@@ -349,9 +349,8 @@ class Button(SimpleButton):
             icon_size["window"] = "32"
         else:
             icon_size["window"] = small if int(small) >= 32 else large
-        # TODO: need to check if there are some modifiers that might need it.
-        #if self._settings.get('menuitems') or (self._settings.get("icon") and self._settings.get("menu_meta")):
-        icon_size["menu"] = "16"
+        if self._settings.get('menuitems') or (self._settings.get("icon") and self._settings.get("menu_meta")):
+            icon_size["menu"] = "16"
         return icon_size
 
     def get_css_file(self, toolbars=None):
@@ -366,6 +365,7 @@ class Button(SimpleButton):
         values = {"chrome_name": self._settings.get("chrome_name")}
         icon_sizes = self.get_icon_size()
         icon_size_set = set(icon_sizes.values())
+        icon_size_set.add("16") # needed for some selectors that assume this size
         image_map = {}
         group_menu_name = self._settings.get("menu_meta")[0] if self._settings.get("menu_meta") else None
         if self._settings.get("icon") and self._settings.get('menu_placement') is None and group_menu_name:
