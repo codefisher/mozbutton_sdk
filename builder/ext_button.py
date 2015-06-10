@@ -349,8 +349,9 @@ class Button(SimpleButton):
             icon_size["window"] = "32"
         else:
             icon_size["window"] = small if int(small) >= 32 else large
-        if self._settings.get('menuitems') or (self._settings.get("icon") and self._settings.get("menu_meta")):
-            icon_size["menu"] = "16"
+        # TODO: need to check if there are some modifiers that might need it.
+        #if self._settings.get('menuitems') or (self._settings.get("icon") and self._settings.get("menu_meta")):
+        icon_size["menu"] = "16"
         return icon_size
 
     def get_css_file(self, toolbars=None):
