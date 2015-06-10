@@ -119,7 +119,14 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
             xpi.writestr(os.path.join("chrome", "locale", locale, "%sbutton.dtd" % locale_prefix), bytes_string(data))
     
     locales_inuse = set(dtd_data.keys())
-    extra_strings = button_locales.get_dtd_data(buttons.get_extra_locale_strings(), buttons)
+
+    if settings.get('restartless'):
+        key_strings = button_locales.get_string_data(buttons.get_key_strings(), buttons, format_type="properties")
+        for locale, data in key_strings.items():
+            if locale in locales_inuse:
+                xpi.writestr(os.path.join("chrome", "locale", locale, "%skeys.properties" % locale_prefix), bytes_string(data))
+
+    extra_strings = button_locales.get_string_data(buttons.get_extra_locale_strings(), buttons)
     if extra_strings[settings.get("default_locale")]:
         for locale, data in extra_strings.items():
             if locale in locales_inuse:

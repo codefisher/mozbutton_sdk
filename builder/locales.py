@@ -203,3 +203,15 @@ class Locale(object):
                     properties_file.append("%s=%s" % (description, self._strings[locale][description]))
             result[locale] = "\n".join(properties_file)
         return result
+
+    def get_string_data(self, strings, button=None, untranslated=True, format_type="dtd"):
+        default = self._settings.get("default_locale")
+        if format_type == "properties":
+            format = "%s=%s"
+        else:
+            format = """<!ENTITY %s "%s">"""
+        result = {}
+        strings = list(strings)
+        for locale in self._locales:
+            result[locale] = "\n".join(self._dtd_inter(strings, button, format, locale, format_type))
+        return result

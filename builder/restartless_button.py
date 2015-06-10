@@ -18,14 +18,29 @@ class RestartlessButton(Button):
         self._ui_ids = set()
     
     def jsm_keyboard_shortcuts(self, file_name):
-        keys = self.get_keyboard_shortcuts(file_name)
-        if keys:
-            statements, count, _ = self._create_dom(ET.fromstring(keys.replace('&', '&amp;')), doc="document")
-            statements.pop(-1)
-            statements.insert(0, "var keyset_0 = document.getElementById('%s');\n\tif(!keyset_0) {" % self._settings.get("file_to_keyset").get(file_name))
-            statements.insert(3, 'document.documentElement.appendChild(keyset_0);\n\t}')
-            return "\n\t".join(statements)
-        return ''
+        if not self._settings.get("use_keyboard_shortcuts"):
+            return ""
+        statements = []
+        for i, button in enumerate(self._button_keys.keys()):
+            command = self._patch_call(self._button_commands.get(file_name, {}).get(button))
+            statements.append("""var key_%(num)s = document.createElement('key');
+	key_%(num)s.id = '%(button)s-key';
+	key_%(num)s.setAttribute('oncommand', 'void(0);');
+	key_%(num)s.addEventListener('command', function(event) {
+				%(command)s
+			}, false);
+	var keycode_%(num)s = extensionPrefs.getComplexValue("key.%(button)s", Ci.nsIPrefLocalizedString).data;
+	if(keycode_%(num)s.length == 1) {
+		key_%(num)s.setAttribute('key', keycode_%(num)s);
+	} else {
+		key_%(num)s.setAttribute('keycode', keycode_%(num)s);
+	}
+	key_%(num)s.setAttribute('modifiers', extensionPrefs.getComplexValue("modifier.%(button)s", Ci.nsIPrefLocalizedString).data);
+    key_%(num)s.setAttribute('disabled', extensionPrefs.getBoolPref("key-disabled.%(button)s"));
+	keyset.appendChild(key_%(num)s);""" % {"num": i, "command": command, "button": button})
+        with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'keyset.js'), encoding='utf-8') as template_file:
+            template = template_file.read()
+        return template.replace('{{keys}}', '\n\t'.join(statements)).replace('{{pref_root}}', self._settings.get('pref_root'))
     
     def _jsm_create_menu(self, file_name, buttons):
         if not self._settings.get('menuitems'):

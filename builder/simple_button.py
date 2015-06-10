@@ -161,10 +161,11 @@ class SimpleButton(object):
         return list(self._button_names)
         
     def get_key(self, name, locale=None):
-        if name[-4:] == ".key":
-            return self._button_keys.get(name[:-4])[0]
-        elif name[-9:] == ".modifier":
-            return self._button_keys.get(name[:-9])[1]
+        start, _, key = name.rpartition('.')
+        if start[-4:] == ".key":
+            return self._button_keys.get(key)[0]
+        elif start[-9:] == ".modifier":
+            return self._button_keys.get(key)[1]
         return ""
 
     def get_string(self, name, locale=None):

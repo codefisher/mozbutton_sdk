@@ -1,0 +1,10 @@
+<groupbox>
+	<caption label="&{{menu_label}};" />
+	<preferences>
+		<preference id="{{pref_root}}key-disabled.{{button}}" name="{{pref_root}}key-disabled.{{button}}"
+			type="bool"/>
+	</preferences>
+	<checkbox preference="{{pref_root}}key-disabled.{{button}}" label="&tb-key-shortcut-disabled.option.label;"/>
+	<description>&tb-key-shortcut-code.label;</description>
+	<textbox use="keycode" button="{{button}}" value="" clickSelectsAll="true" flex="1" />
+</groupbox>

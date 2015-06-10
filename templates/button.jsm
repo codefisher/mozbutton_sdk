@@ -111,6 +111,9 @@ function unloadButtons(window) {
 		var key = document.getElementById(buttonId + '-key');
 		if(key) {
 			key.parentNode.removeChild(key);
+			//if(key.parentNode.childNodes.length == 0) {
+			//	key.parentNode.parentNode.removeChild(key.parentNode);
+			//}
 		}
 		var menuitem = document.getElementById(buttonId + '-menu-item');
 		if(menuitem) {
@@ -163,7 +166,7 @@ function observeToolbar(window, document, toolbar_id) {
 				prefs.setCharPref(mutation.attributeName, toolbar.getAttribute(mutation.attributeName));
 			}
 		});
-	}
+	};
 	var mutationObserver = new window.MutationObserver(observer);
 	var attrList = prefs.getChildList('', {});
 	for(var i in attrList) {

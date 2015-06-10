@@ -159,7 +159,7 @@ class Button(SimpleButton):
 
     def get_options(self):
         result = {}
-        if self._button_options_js:
+        if self._button_options_js or (self._settings.get("restartless") and self._settings.get("use_keyboard_shortcuts")):
             javascript = ("""<script type="application/x-javascript" src="chrome://%s/content/loader.js"/>\n"""
                           """<script type="application/x-javascript" src="chrome://%s/content/button.js"/>\n"""
                           """<script type="application/x-javascript" src="chrome://%s/content/option.js"/>\n"""
@@ -172,6 +172,13 @@ class Button(SimpleButton):
                        .replace("{{chrome_name}}", self._settings.get("chrome_name"))
                        .replace("{{locale_file_prefix}}", self._settings.get("locale_file_prefix"))
                        .replace("{{javascript}}", javascript))
+        if self._settings.get("restartless") and self._settings.get("use_keyboard_shortcuts"):
+            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "key-option.xul"), "r") as key_option_file:
+                key_option_tempate = key_option_file.read()
+            for button in self._button_keys.keys():
+                self._button_options["%s-key-item" % button] = ("tb-key-shortcut.option.title:lightning.png",
+                            key_option_tempate.replace("{{button}}", button).replace("{{menu_label}}", "%s.label" % button))
+                self._button_applications["%s-key-item" % button] = self._applications
         if self._settings.get("menuitems"):
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "showmenu-option.xul"), "r") as menu_option_file:
                 menu_option_tempate = menu_option_file.read() 
@@ -260,12 +267,22 @@ class Button(SimpleButton):
         for buttons in self._button_xul.values():
             for button in buttons.values():
                 strings.extend(locale_match.findall(button))
-        for button in self._button_keys.keys():
-            strings.extend(["%s.key" % button, "%s.modifier" % button])
+        pref_root = self._settings.get('pref_root')
+        if not self._settings.get('restartless'):
+            for button in self._button_keys.keys():
+                strings.extend(["%s.key.%s" % (pref_root, button), "%s.modifier.%s" % (pref_root, button)])
         strings = list(set(strings))
         strings.sort()
         return strings
-    
+
+    def get_key_strings(self):
+        strings = []
+        pref_root = self._settings.get('pref_root')
+        for button in self._button_keys.keys():
+            strings.extend(["%skey.%s" % (pref_root, button), "%smodifier.%s" % (pref_root, button)])
+        strings.sort()
+        return strings
+
     def get_extra_locale_strings(self):
         locale_match = re.compile("&([a-zA-Z0-9.-]*);")
         strings = []
@@ -292,20 +309,29 @@ class Button(SimpleButton):
 
     def get_defaults(self, format_dict=False):
         settings = []
+        pref_root = self._settings.get("pref_root")
+        chrome_name = self._settings.get("chrome_name")
         if self._settings.get("translate_description"):
             settings.append(("extensions.%s.description" % self._settings.get("extension_id"), 
-                         """'chrome://%s/locale/%sbutton.properties'""" % (self._settings.get("chrome_name"), self._settings.get("locale_file_prefix"))))
+                         """'chrome://%s/locale/%sbutton.properties'""" % (chrome_name, self._settings.get("locale_file_prefix"))))
+        if self._settings.get('restartless') and self._settings.get('use_keyboard_shortcuts'):
+            for button in self._button_keys.keys():
+                settings.append(("%skey-disabled.%s" % (pref_root, button), 'false'))
+                settings.append(("%skey.%s" % (pref_root, button),
+                         """'chrome://%s/locale/%skeys.properties'""" % (chrome_name, self._settings.get("locale_file_prefix"))))
+                settings.append(("%smodifier.%s" % (pref_root, button),
+                         """'chrome://%s/locale/%skeys.properties'""" % (chrome_name, self._settings.get("locale_file_prefix"))))
         if self._settings.get("show_updated_prompt") or self._settings.get("add_to_main_toolbar"):
-            settings.append(("%s%s" % (self._settings.get("pref_root"), self._settings.get("current_version_pref")), "''"))
+            settings.append(("%s%s" % (pref_root, self._settings.get("current_version_pref")), "''"))
         if self._settings.get("menuitems"):
             if self._settings.get("menu_placement") is None and self._settings.get("menu_meta"):
                 menu_id, menu_label, location = self._settings.get("menu_meta")
-                settings.append(("%sshowamenu.%s" % (self._settings.get("pref_root"), menu_id), self._settings.get("default_show_menu_pref")))
+                settings.append(("%sshowamenu.%s" % (pref_root, menu_id), self._settings.get("default_show_menu_pref")))
             else:
                 for button in self._buttons:
-                    settings.append(("%sshowamenu.%s-menu-item" % (self._settings.get("pref_root"), button), self._settings.get("default_show_menu_pref")))
+                    settings.append(("%sshowamenu.%s-menu-item" % (pref_root, button), self._settings.get("default_show_menu_pref")))
         for name, value in self._preferences.items():
-            settings.append(("%s%s" % (self._settings.get("pref_root"), name), value))
+            settings.append(("%s%s" % (pref_root, name), value))
         if format_dict:
             return "\n\t".join("%s: %s," % setting for setting in settings)
         else:
@@ -515,6 +541,8 @@ class Button(SimpleButton):
             js_imports.add("sortMenu")
             js_imports.add("handelMenuLoaders")
             js_imports.add("setUpMenuShower")
+        if self._settings.get("use_keyboard_shortcuts"):
+            js_imports.add("settingWatcher")
 
         for file_name, js in self._button_js.items():
             js_file = "\n".join(js.values())
@@ -569,7 +597,7 @@ class Button(SimpleButton):
                         js_files[file_name] += end
                     else:
                         js_files[file_name] = end
-        if self._button_options_js:
+        if self._button_options_js or (self._settings.get("restartless") and self._settings.get("use_keyboard_shortcuts")):
             extra_javascript = []
             for button, (first, data) in self._button_options.items():
                 js_options_include.update(detect_depandancy.findall(data))
@@ -660,18 +688,19 @@ class Button(SimpleButton):
         if not self._settings.get("use_keyboard_shortcuts") or not self._settings.get("file_to_keyset").get(file_name):
             return ""
         keys = []
+        pref_root = self._settings.get('pref_root')
         for button, (key, modifier) in self._button_keys.items():
             attr = 'key' if len(key) == 1 else "keycode"
             if file_name in self._button_xul:
-                mod = "" if not modifier else 'modifiers="&%s.modifier;" ' % button
+                mod = "" if not modifier else 'modifiers="&%smodifier.%s;" ' % (pref_root, button)
                 command = self._button_commands.get(file_name, {}).get(button)
                 if command:
-                    keys.append("""<key %s="&%s.key;" %sid="%s-key" oncommand="%s" />""" % (attr, button, mod, button, command))
+                    keys.append("""<key %s="&%skey.%s;" %sid="%s-key" oncommand="%s" />""" % (attr, pref_root, button, mod, button, command))
                 else:
                     if self._settings.get("menuitems"):
-                        keys.append("""<key %s="&%s.key;" %sid="%s-key" command="%s-menu-item" />""" % (attr, button, mod, button, button))
+                        keys.append("""<key %s="&%skey.%s;" %sid="%s-key" command="%s-menu-item" />""" % (attr, pref_root, button, mod, button, button))
                     else:
-                        keys.append("""<key %s="&%s.key;" %sid="%s-key" command="%s" />""" % (attr, button, mod, button, button))
+                        keys.append("""<key %s="&%skey.%s;" %sid="%s-key" command="%s" />""" % (attr, pref_root, button, mod, button, button))
         if keys:
             return """\n <keyset id="%s">\n\t%s\n </keyset>""" % (self._settings.get("file_to_keyset").get(file_name), "\n\t".join(keys))
         else:
