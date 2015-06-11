@@ -4,6 +4,15 @@ var keyset = document.getElementById('mainKeyset');
 		keyset.id = 'mainKeyset';
 		document.documentElement.appendChild(keyset);
 	}
+	function setKeyCode(key, keycode) {
+		if(keycode.length == 1) {
+			key.setAttribute('key', keycode);
+			key.removeAttribute('keycode');
+		} else {
+			key.setAttribute('keycode', keycode);
+			key.removeAttribute('key');
+		}
+	}
 	{{keys}}
 	function keyMove(key) {
 		var keyset = key.parentNode;
@@ -24,13 +33,7 @@ var keyset = document.getElementById('mainKeyset');
 	var keyWatcher = new toolbar_buttons.settingWatcher('{{pref_root}}key.', function(subject, topic, data) {
 		var key = document.getElementById(data + '-key');
 		var keycode = extensionPrefs.getComplexValue("key." + data, Ci.nsIPrefLocalizedString).data;
-		if(keycode.length == 1) {
-			key.setAttribute('key', keycode);
-			key.removeAttribute('keycode');
-		} else {
-			key.setAttribute('keycode', keycode);
-			key.removeAttribute('key');
-		}
+		setKeyCode(key, keycode);
 		keyMove(key);
 	});
 	keyWatcher.startup();
@@ -43,7 +46,16 @@ var keyset = document.getElementById('mainKeyset');
 	modifiersWatcher.startup();
 	var keyDisabledWatcher = new toolbar_buttons.settingWatcher('{{pref_root}}key-disabled.', function(subject, topic, data) {
 		var key = document.getElementById(data + '-key');
-		key.setAttribute('disabled', extensionPrefs.getBoolPref('key-disabled.' + data));
+		var disabled = extensionPrefs.getBoolPref('key-disabled.' + data)
+		key.setAttribute('disabled', disabled);
+		if(disabled) {
+			key.removeAttribute('keycode');
+			key.removeAttribute('key');
+			key.removeAttribute('modifiers');
+		} else {
+			setKeyCode(key, extensionPrefs.getComplexValue("key." + data, Ci.nsIPrefLocalizedString).data);
+			key.setAttribute('modifiers', extensionPrefs.getComplexValue("modifier." + data, Ci.nsIPrefLocalizedString).data);
+		}
 		keyMove(key);
 	});
 	keyDisabledWatcher.startup();

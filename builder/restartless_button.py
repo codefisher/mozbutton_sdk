@@ -22,21 +22,22 @@ class RestartlessButton(Button):
             return ""
         statements = []
         for i, button in enumerate(self._button_keys.keys()):
-            command = self._patch_call(self._button_commands.get(file_name, {}).get(button))
+            func = self._button_commands.get(file_name, {}).get(button)
+            if func is None:
+                continue
+            command = self._patch_call(func)
             statements.append("""var key_%(num)s = document.createElement('key');
 	key_%(num)s.id = '%(button)s-key';
 	key_%(num)s.setAttribute('oncommand', 'void(0);');
 	key_%(num)s.addEventListener('command', function(event) {
 				%(command)s
 			}, false);
-	var keycode_%(num)s = extensionPrefs.getComplexValue("key.%(button)s", Ci.nsIPrefLocalizedString).data;
-	if(keycode_%(num)s.length == 1) {
-		key_%(num)s.setAttribute('key', keycode_%(num)s);
-	} else {
-		key_%(num)s.setAttribute('keycode', keycode_%(num)s);
+	var key_disabled_%(num)s = extensionPrefs.getBoolPref("key-disabled.%(button)s");
+	key_%(num)s.setAttribute('disabled', key_disabled_%(num)s);
+	if(!key_disabled_%(num)s) {
+		setKeyCode(key_%(num)s, extensionPrefs.getComplexValue("key.%(button)s", Ci.nsIPrefLocalizedString).data);
+		key_%(num)s.setAttribute('modifiers', extensionPrefs.getComplexValue("modifier.%(button)s", Ci.nsIPrefLocalizedString).data);
 	}
-	key_%(num)s.setAttribute('modifiers', extensionPrefs.getComplexValue("modifier.%(button)s", Ci.nsIPrefLocalizedString).data);
-    key_%(num)s.setAttribute('disabled', extensionPrefs.getBoolPref("key-disabled.%(button)s"));
 	keyset.appendChild(key_%(num)s);""" % {"num": i, "command": command, "button": button})
         with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'keyset.js'), encoding='utf-8') as template_file:
             template = template_file.read()
@@ -162,15 +163,15 @@ class RestartlessButton(Button):
             self._ui_ids.add(root.attrib["viewid"])
             statements, _, children = self._create_dom(root, child_parent="popupset", append_children=False)
             children[0] = """var popupset = document.getElementById('PanelUI-multiView');
-			if(popupset) {
-				var menupopup_1 = document.createElement('panelview');
-			} else {
-			    var menupopup_1 = document.createElement('menupopup');
-				popupset = document.documentElement;
-			}"""
+				if(popupset) {
+					var menupopup_1 = document.createElement('panelview');
+				} else {
+					var menupopup_1 = document.createElement('menupopup');
+					popupset = document.documentElement;
+				}"""
             data = {
                 "type": "'view'",
-                "onBeforeCreated": 'function (document) {\n\t\t\tvar window = document.defaultView;\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(children),
+                "onBeforeCreated": 'function (document) {\n\t\t\t\tvar window = document.defaultView;\n\t\t\t\t%s\n\t\t\t}' % "\n\t\t\t\t".join(children),
             }
         elif 'usepanelview' in root.attrib:
             self._ui_ids.add("%s-panel-view" % root.attrib["id"])
@@ -187,21 +188,21 @@ class RestartlessButton(Button):
             data = {
                 "type": "'custom'",
                 "onBuild": '''function (document) {
-			var window = document.defaultView;
-			var popupset = document.getElementById('PanelUI-multiView');
-			if(popupset) {
-				var menupopup_1 = document.createElement('panelview');
+				var window = document.defaultView;
+				var popupset = document.getElementById('PanelUI-multiView');
+				if(popupset) {
+					var menupopup_1 = document.createElement('panelview');
+					%s
+					menupopup_1.id = "%s-panel-view";
+				}
 				%s
-				menupopup_1.id = "%s-panel-view";
-			}
-			%s
-		}''' % ("\n\t\t\t\t".join(children), root.attrib['id'], "\n\t\t\t".join(statements))
+		}''' % ("\n\t\t\t\t\t".join(children), root.attrib['id'], "\n\t\t\t\t".join(statements))
             }
         else:
             statements, _, _ = self._create_dom(root)
             data = {
                 "type": "'custom'",
-                "onBuild": 'function (document) {\n\t\t\tvar window = document.defaultView;\n\t\t\t%s\n\t\t}' % "\n\t\t\t".join(statements)
+                "onBuild": 'function (document) {\n\t\t\t\tvar window = document.defaultView;\n\t\t\t\t%s\n\t\t\t}' % "\n\t\t\t\t".join(statements)
             }
         self._apply_toolbox(file_name, data)
         toolbar_max_count = self._settings.get("buttons_per_toolbar")
@@ -221,14 +222,14 @@ class RestartlessButton(Button):
             elif key == 'viewid':
                 data["viewId"] = "'%s'" % value
             elif key == 'onviewshowing':
-                data["onViewShowing"] = "function(event){\n\t\t\t%s\n\t\t}" % self._patch_call(value)
+                data["onViewShowing"] = "function(event){\n\t\t\t\t%s\n\t\t\t}" % self._patch_call(value)
             elif key == 'onviewhideing':
-                data["onViewHiding"] = "function(event){\n\t\t\t%s\n\t\t}" % self._patch_call(value)
+                data["onViewHiding"] = "function(event){\n\t\t\t\t%s\n\t\t\t}" % self._patch_call(value)
         for js_file in self._get_js_file_list(file_name):
             if self._button_js_setup.get(js_file, {}).get(button_id):
                 data["onCreated"] = "function(aNode){\n\t\t\tvar document = aNode.ownerDocument;\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
         items = sorted(data.items(), key=self._attr_key)
-        return "\tCustomizableUI.createWidget({\n\t\t%s\n\t});" % ",\n\t\t".join("%s: %s" % (key, value) for key, value in items)
+        return "\n\ttry{\n\t\tCustomizableUI.createWidget({\n\t\t\t%s\n\t\t});\n\t} catch(e) {}\n" % ",\n\t\t\t".join("%s: %s" % (key, value) for key, value in items)
 
     def _apply_toolbox(self, file_name, data):
         toolbox_info = self._settings.get("file_to_toolbar_box2").get(file_name)
@@ -249,9 +250,7 @@ class RestartlessButton(Button):
         if re.search(r'\bwindow\b', value):
             data.append("var window = event.target.ownerDocument.defaultView;")
         data.append(value)
-        return "\n\t\t\t".join(data)
-
-
+        return "\n\t\t\t\t".join(data)
 
     def _create_jsm_button(self, button_id, root, file_name, count, toolbar_ids):
         toolbar_max_count = self._settings.get("buttons_per_toolbar")
@@ -274,12 +273,12 @@ class RestartlessButton(Button):
                 if key == 'oncommand':
                     self._button_commands[file_name][button_id] = value
                 key = 'onCommand' if key == 'oncommand' else 'onClick'
-                data[key] = "function(event) {\n\t\t\t%s\n\t\t}" % self._patch_call(value)
+                data[key] = "function(event) {\n\t\t\t\t%s\n\t\t\t}" % self._patch_call(value)
         for js_file in self._get_js_file_list(file_name):
             if self._button_js_setup.get(js_file, {}).get(button_id):
-                data["onCreated"] = "function(aNode) {\n\t\t\tvar document = aNode.ownerDocument;\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
+                data["onCreated"] = "function(aNode) {\n\t\t\t\tvar document = aNode.ownerDocument;\n\t\t\t\t%s\n\t\t\t}" % self._button_js_setup[js_file][button_id]
         items = sorted(data.items(), key=self._attr_key)
-        result = "\tCustomizableUI.createWidget({\n\t\t%s\n\t});" % ",\n\t\t".join("%s: %s" % (key, value) for (key, value) in items)
+        result = "\n\ttry{\n\t\tCustomizableUI.createWidget({\n\t\t\t%s\n\t\t});\n\t} catch(e) {}\n" % ",\n\t\t\t".join("%s: %s" % (key, value) for (key, value) in items)
         return result
 
     def get_jsm_files(self):

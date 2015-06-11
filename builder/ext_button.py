@@ -159,7 +159,7 @@ class Button(SimpleButton):
 
     def get_options(self):
         result = {}
-        if self._button_options_js or (self._settings.get("restartless") and self._settings.get("use_keyboard_shortcuts")):
+        if self._button_options_js:
             javascript = ("""<script type="application/x-javascript" src="chrome://%s/content/loader.js"/>\n"""
                           """<script type="application/x-javascript" src="chrome://%s/content/button.js"/>\n"""
                           """<script type="application/x-javascript" src="chrome://%s/content/option.js"/>\n"""
@@ -167,18 +167,19 @@ class Button(SimpleButton):
                              self._settings.get("chrome_name")))
         else:
             javascript = ""
-        with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "option.xul"), "r") as overlay_window_file:
-            overlay_window = (overlay_window_file.read()
-                       .replace("{{chrome_name}}", self._settings.get("chrome_name"))
-                       .replace("{{locale_file_prefix}}", self._settings.get("locale_file_prefix"))
-                       .replace("{{javascript}}", javascript))
         if self._settings.get("restartless") and self._settings.get("use_keyboard_shortcuts"):
+            javascript += """<script type="application/x-javascript" src="chrome://%s/content/key-option.js"/>\n""" % self._settings.get("chrome_name")
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "key-option.xul"), "r") as key_option_file:
                 key_option_tempate = key_option_file.read()
             for button in self._button_keys.keys():
                 self._button_options["%s-key-item" % button] = ("tb-key-shortcut.option.title:lightning.png",
                             key_option_tempate.replace("{{button}}", button).replace("{{menu_label}}", "%s.label" % button))
                 self._button_applications["%s-key-item" % button] = self._applications
+        with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "option.xul"), "r") as overlay_window_file:
+            overlay_window = (overlay_window_file.read()
+                       .replace("{{chrome_name}}", self._settings.get("chrome_name"))
+                       .replace("{{locale_file_prefix}}", self._settings.get("locale_file_prefix"))
+                       .replace("{{javascript}}", javascript))
         if self._settings.get("menuitems"):
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "showmenu-option.xul"), "r") as menu_option_file:
                 menu_option_tempate = menu_option_file.read() 
@@ -599,7 +600,10 @@ class Button(SimpleButton):
                         js_files[file_name] += end
                     else:
                         js_files[file_name] = end
-        if self._button_options_js or (self._settings.get("restartless") and self._settings.get("use_keyboard_shortcuts")):
+        if self._settings.get("restartless") and self._settings.get("use_keyboard_shortcuts"):
+            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "key-option.js")) as key_option_fp:
+                js_files["key-option"] = key_option_fp.read()
+        if self._button_options_js:
             extra_javascript = []
             for button, (first, data) in self._button_options.items():
                 js_options_include.update(detect_depandancy.findall(data))
@@ -612,9 +616,8 @@ class Button(SimpleButton):
                 self._button_options_js[button] = ",\n".join(js_functions)
                 extra_javascript.append(multi_line_replace.sub("\n",
                                         function_match.sub("", value).strip()));
-            self._button_options_js.update(dict((name, function) for function, name
-                               in function_name_match.findall(shared_functions)
-                               if name in js_options_include))
+            self._button_options_js.update(dict((name, function) for name, function
+                               in externals.items() if name in js_options_include))
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "option.js")) as option_fp:
                 js_files["option"] = (option_fp.read()
                     % ("\n\t".join(",\n".join(val for val in self._button_options_js.values() if val).split("\n")), "\n".join(extra_javascript)))

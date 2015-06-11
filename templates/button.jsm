@@ -49,6 +49,8 @@ var buttonStrings = new StringBundle("chrome://{{chrome_name}}/locale/{{locale-f
 function setupButtons() {
 	var extensionPrefs = Cc['@mozilla.org/preferences-service;1'].getService(Ci.nsIPrefService).getBranch("{{pref_root}}");
 	{{scripts}}
+	// All these get wrapped in a try catch in case there is another button
+	// with the same ID, which would throw an error.
 	{{buttons}}
 }
 
