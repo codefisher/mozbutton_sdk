@@ -561,14 +561,15 @@ class Button(SimpleButton):
                     self._button_js_setup[file_name][button_id] = value
             if self._settings.get("menuitems"):
                 self._button_js_setup[file_name]["_menu_hider"] = "toolbar_buttons.setUpMenuShower(document);"
-        shared = []
-        lib_folder = os.path.join(self._settings.get("project_root"), "files", "lib")
-        for file_name in os.listdir(lib_folder):
-            with open(os.path.join(lib_folder, file_name), "r") as shared_functions_file:
-                shared.append(shared_functions_file.read())
-        shared_functions = "\n\n".join(shared)
-        externals = dict((name, function) for function, name
-                         in function_name_match.findall(shared_functions))
+        externals = {}
+        lib_folders = [os.path.join(self._settings.get("button_sdk_root"), "files", "lib"),
+                       os.path.join(self._settings.get("project_root"), "files", "lib")]
+        for lib_folder in lib_folders:
+            if os.path.isdir(lib_folder):
+                for file_name in os.listdir(lib_folder):
+                    with open(os.path.join(lib_folder, file_name), "r") as shared_functions_file:
+                        externals.update({name: function for function, name
+                                 in function_name_match.findall(shared_functions_file.read())})
         if self._settings.get("include_toolbars"):
             js_imports.add("toggleToolbar")
         extra_functions = []
