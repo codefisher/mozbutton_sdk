@@ -61,8 +61,9 @@ function loadButtons(window) {
 	var extensionPrefs = Cc['@mozilla.org/preferences-service;1'].getService(Ci.nsIPrefService).getBranch("extension.tbutton.");
 	{{toolbars}}
 	registerToolbars(window, document, {{toolbar_ids}});
-	{{menu}}
+	// we create the keys, then the menu items, so the menu items get connected to the keys
 	{{keys}}
+	{{menu}}
 	{{end}}
 }
 
