@@ -50,11 +50,11 @@ class Button(SimpleButton):
         self._modules = defaultdict(set)
         self._button_js_setup = defaultdict(dict)
         self._button_commands = defaultdict(dict)
+        self.has_options = False
 
         # we always want these file
         self._button_js["loader"]["_"] = ""
         self._button_js["button"]["_"] = ""
-        self._included_js_files = []
 
         for folder, button, files in self._info:
             for file_name in (self._window_files + self._app_files):
@@ -243,6 +243,7 @@ class Button(SimpleButton):
                 button_pref.append(panel_xml)
             result["%s-options" % application] = overlay_window.replace("{{options}}",
                                     "\n".join(button_pref))
+        self.has_options = bool(result)
         return result
 
     def get_options_applications(self):
@@ -258,7 +259,37 @@ class Button(SimpleButton):
         precondition: get_options() has been called
         """
         return self._option_icons
-        
+
+    def get_files(self):
+        """Iterator over a tuple of filename and data"""
+        raise NotImplementedError()
+
+    def locale_file_filter(self, strings, locales_inuse):
+        default_locale = self._settings.get("default_locale")
+        if strings[default_locale]:
+            for locale, data in strings.items():
+                if locale in locales_inuse:
+                    yield locale, data
+
+    def locale_files(self, button_locales, locales_inuse):
+        """
+        For option locales to be included, the get_options() method has to be called first
+        """
+        for locale, files in button_locales.get_files():
+            for file_name in files:
+                with codecs.open(file_name, encoding='utf-8') as fp:
+                    yield locale, file_name, fp.read()
+        extra_strings = button_locales.get_string_data(self.get_extra_locale_strings(), self)
+        for locale, data in self.locale_file_filter(extra_strings, locales_inuse):
+            yield locale, "files.dtd", data
+        properties_data = button_locales.get_properties_data(self.get_properties_strings(), self)
+        for locale, data in self.locale_file_filter(properties_data, locales_inuse):
+            yield locale, "button.properties", data
+        if self.has_options:
+            options_strings = button_locales.get_string_data(self.get_options_strings(), self)
+            for locale, data in self.locale_file_filter(options_strings, locales_inuse):
+                yield locale, "options.dtd", data
+
     def get_file_names(self):
         return self._button_files
 
@@ -600,9 +631,6 @@ class Button(SimpleButton):
                         js_files[file_name] += end
                     else:
                         js_files[file_name] = end
-        if self._settings.get("restartless") and self._settings.get("use_keyboard_shortcuts"):
-            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "key-option.js")) as key_option_fp:
-                js_files["key-option"] = key_option_fp.read()
         if self._button_options_js:
             extra_javascript = []
             for button, (first, data) in self._button_options.items():
@@ -621,28 +649,6 @@ class Button(SimpleButton):
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "option.js")) as option_fp:
                 js_files["option"] = (option_fp.read()
                     % ("\n\t".join(",\n".join(val for val in self._button_options_js.values() if val).split("\n")), "\n".join(extra_javascript)))
-        if (self._settings.get("show_updated_prompt") or self._settings.get("add_to_main_toolbar")) and not self._settings.get('restartless'):
-            update_file = os.path.join(self._settings.get("project_root"), "files", "update.js")
-            if not os.path.isfile(update_file):
-                update_file = os.path.join(self._settings.get('button_sdk_root'), "templates", "update.js")
-            with open(update_file, "r") as update_js:
-                show_update = (update_js.read()
-                           .replace("{{uuid}}", self._settings.get("extension_id"))
-                           .replace("{{homepage_url}}",
-                                    self._settings.get("homepage"))
-                           .replace("{{version}}",
-                                    self._settings.get("version"))
-                           .replace("{{chrome_name}}",
-                                    self._settings.get("chrome_name"))
-                           .replace("{{current_version_pref}}",
-                                    self._settings.get("current_version_pref"))
-                           )
-            if self._settings.get("show_updated_prompt"):
-                show_update += "load_toolbar_button.callbacks.push(load_toolbar_button.load_url);\n"
-            if self._settings.get("add_to_main_toolbar"):
-                buttons = ", ".join("'%s'" % item for item in self._settings.get("add_to_main_toolbar"))
-                show_update += "load_toolbar_button.callbacks.push(function(previousVersion, currentVersion) { if(previousVersion == '') { load_toolbar_button.add_buttons([%s]);} });\n" % buttons 
-            js_files["button"] = show_update + "\n" + js_files["button"]
         inerface_file = os.path.join(self._settings.get('project_root'), 'files', 'interfaces')
         if not os.path.isfile(inerface_file):
             inerface_file = os.path.join(self._settings.get('button_sdk_root'), 'templates', 'interfaces')
@@ -679,7 +685,6 @@ class Button(SimpleButton):
             self._has_javascript = True
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "loader.js"), "r") as loader:
                 js_files["loader"] = loader.read()
-        self._included_js_files = js_files.keys()
         return js_files
 
     def get_properties_strings(self):

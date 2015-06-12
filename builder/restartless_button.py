@@ -16,7 +16,25 @@ class RestartlessButton(Button):
     def __init__(self, *args, **kwargs):
         super(RestartlessButton, self).__init__(*args, **kwargs)
         self._ui_ids = set()
-    
+        self._included_js_files = []
+
+    def get_files(self):
+        for file_name, data in self.get_jsm_files().items():
+            yield (file_name + ".jsm", data)
+
+    def locale_files(self, button_locales):
+        dtd_data = button_locales.get_dtd_data(self.get_locale_strings(),
+            self, untranslated=False, format_type="properties")
+        for locale, data in dtd_data.items():
+            yield locale, "button_labels.properties", data
+        locales_inuse = dtd_data.keys()
+        key_strings = button_locales.get_string_data(self.get_key_strings(),
+            self, format_type="properties")
+        for locale, data in self.locale_file_filter(key_strings, locales_inuse):
+            yield locale, "keys.properties", data
+        for locale, file_name, data in super(RestartlessButton, self).locale_files(button_locales, locales_inuse):
+            yield locale, file_name, data
+
     def jsm_keyboard_shortcuts(self, file_name):
         if not self._settings.get("use_keyboard_shortcuts"):
             return ""
@@ -42,7 +60,15 @@ class RestartlessButton(Button):
         with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'keyset.js'), encoding='utf-8') as template_file:
             template = template_file.read()
         return template.replace('{{keys}}', '\n\t'.join(statements)).replace('{{pref_root}}', self._settings.get('pref_root'))
-    
+
+    def get_js_files(self):
+        js_files = super(RestartlessButton, self).get_js_files()
+        if self._settings.get("use_keyboard_shortcuts"):
+            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "key-option.js")) as key_option_fp:
+                js_files["key-option"] = key_option_fp.read()
+        self._included_js_files = js_files.keys()
+        return js_files
+
     def _jsm_create_menu(self, file_name, buttons):
         if not self._settings.get('menuitems'):
             return ''

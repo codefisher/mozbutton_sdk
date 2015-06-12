@@ -54,7 +54,7 @@ def main():
     apply_settings_files(config, args)
     config["locale"] = "en-US"
     locale_folders, locales = get_locale_folders(config.get("locale"), config)
-    button_locales = Locale(config, locale_folders, locales, all_files=True)
+    button_locales = Locale(config, locale_folders, locales)
     items = button_locales._dtd['en-US']
     items.update(button_locales._properties['en-US'])
     strings = defaultdict(list)

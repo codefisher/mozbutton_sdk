@@ -11,6 +11,46 @@ from builder.ext_button import Button
 
 class OverlayButton(Button):
 
+    def get_js_files(self):
+        js_files = super(OverlayButton, self).get_js_files()
+        if self._settings.get("show_updated_prompt") or self._settings.get("add_to_main_toolbar"):
+            update_file = os.path.join(self._settings.get("project_root"), "files", "update.js")
+            if not os.path.isfile(update_file):
+                update_file = os.path.join(self._settings.get('button_sdk_root'), "templates", "update.js")
+            with open(update_file, "r") as update_js:
+                show_update = (update_js.read()
+                           .replace("{{uuid}}", self._settings.get("extension_id"))
+                           .replace("{{homepage_url}}",
+                                    self._settings.get("homepage"))
+                           .replace("{{version}}",
+                                    self._settings.get("version"))
+                           .replace("{{chrome_name}}",
+                                    self._settings.get("chrome_name"))
+                           .replace("{{current_version_pref}}",
+                                    self._settings.get("current_version_pref"))
+                           )
+            if self._settings.get("show_updated_prompt"):
+                show_update += "load_toolbar_button.callbacks.push(load_toolbar_button.load_url);\n"
+            if self._settings.get("add_to_main_toolbar"):
+                buttons = ", ".join("'%s'" % item for item in self._settings.get("add_to_main_toolbar"))
+                show_update += "load_toolbar_button.callbacks.push(function(previousVersion, currentVersion) { if(previousVersion == '') { load_toolbar_button.add_buttons([%s]);} });\n" % buttons
+            js_files["button"] = show_update + "\n" + js_files["button"]
+        return js_files
+
+    def get_files(self):
+        for file_name, data in self.get_xul_files().items():
+            yield (file_name + ".xul", data)
+
+    def locale_files(self, button_locales):
+        dtd_data = button_locales.get_dtd_data(self.get_locale_strings(),
+            self, untranslated=False)
+        for locale, data in dtd_data.items():
+            yield locale, "button.dtd", data
+        locales_inuse = dtd_data.keys()
+        for locale, file_name, data in super(OverlayButton, self).locale_files(
+                button_locales, locales_inuse):
+            yield locale, file_name, data
+
     def _create_menu(self, file_name, buttons):
         if not self._settings.get('menuitems'):
             return ''

@@ -11,16 +11,14 @@ ampersand_fix = re.compile(r'&(?![A-Za-z]+[0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)')
 
 class Locale(object):
     """Parses the localisation files of the extension and queries it for data"""
-    def __init__(self, settings, folders=None, locales=None, options=False, 
-                 load_properites=True, only_meta=False, all_files=False,
-                 local_obj=None):
+    def __init__(self, settings, folders=None, locales=None, local_obj=None):
         self._settings = settings
         if local_obj:
             self._missing_strings = local_obj._missing_strings
             self._folders = local_obj._folders
             self._locales = local_obj._locales
             self._strings = local_obj._strings
-            self._meta = local_obj._meta
+            self._files = local_obj._files
             self._search_data = local_obj._search_data
             return
         elif folders and locales:
@@ -28,7 +26,7 @@ class Locale(object):
             self._folders = folders
             self._locales = locales
             self._strings = defaultdict(dict)
-            self._meta = {}
+            self._files = defaultdict(list)
             self._search_data = {}
         else:
             raise ValueError("Not able to make Locale")
@@ -39,32 +37,24 @@ class Locale(object):
                     string, name, file_name, entities = line.split('\t', 4)
                     for entity in entities.split(','):
                         self._search_data[entity.strip()] = {"name": name, "file_name": file_name}
-        
+        include_locale_files = set(self._settings.get("include_locale_files", ()))
         for folder, locale in zip(folders, locales):
             files = [os.path.join(folder, file_name)
                      for file_name in os.listdir(folder)
                      if not file_name.startswith(".")]
             for file_name in files:
-                if not all_files:
-                    if only_meta and not file_name.endswith("meta.dtd"):
-                        continue
-                    if not options and file_name.endswith("options.dtd"):
-                        continue
-                    elif options and not file_name.endswith("options.dtd"):
-                        continue
-                    elif not load_properites and file_name.endswith(".properties"):
-                        continue
+                if file_name in include_locale_files:
+                    self._files[locale].append(file_name)
                 if file_name.endswith(".dtd"):
-                    if file_name.endswith("meta.dtd"):
-                        self._meta[locale] = file_name
                     dtd = etree.DTD(file_name)
                     self._strings[locale].update({entity.name: entity.content for entity in dtd.iterentities()})
                 elif file_name.endswith(".properties"):
                     with codecs.open(file_name, encoding='utf-8') as data:
                          self._strings[locale].update({name: value for (name, value) in
                                     (line.strip().split('=', 1) for line in data if line.strip()) if name})
-    def get_meta(self):
-        return self._meta.items()
+
+    def get_files(self):
+        return self._files.items()
 
     def get_locales(self):
         return self._locales
