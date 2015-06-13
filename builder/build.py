@@ -73,8 +73,8 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
         locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
         button_locales = Locale(settings, locale_folders, locales)
     else:
-        button_locales = Locale(settings, local_obj=button_locales)
-        locales = button_locales.get_locales()
+        button_locales = Locale.from_locale(settings, button_locales)
+        locales = button_locales.locales
     buttons = get_buttons(settings)
     if len(buttons.buttons()) == 0:
         raise ExtensionConfigError("The selected config would have no buttons.")
@@ -148,7 +148,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
         xpi.write(os.path.join(settings.get("project_root"), "files", "icon.png"), "icon.png")
         xpi.write(os.path.join(settings.get("project_root"), "files", "icon.png"), os.path.join("chrome", "skin", "icon.png"))
     xpi.writestr("chrome.manifest", create_manifest(settings, locales_inuse, buttons, has_resources, option_applicaions))
-    xpi.writestr("install.rdf", create_install(settings, buttons.get_suported_applications(), option_applicaions))
+    xpi.writestr("install.rdf", create_install(settings, buttons.get_supported_applications(), option_applicaions))
     if settings.get('restartless'):
         xpi.writestr("bootstrap.js", create_bootstrap(settings, buttons, has_resources))
         xpi.write(os.path.join(settings.get('button_sdk_root'), "templates", "customizable.jsm"), 

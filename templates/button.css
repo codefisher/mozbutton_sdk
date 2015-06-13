@@ -9,3 +9,13 @@
     width:16px;
     height:16px;
 }
+{%- for css in blocks %}
+{{ css }}
+{%- endfor %}
+{%- for selectors, declarations in css_data %}
+{{ selectors }} {
+{%- for delaration in declarations %}
+    {{ delaration }}
+{%- endfor %}
+}
+{%- endfor %}

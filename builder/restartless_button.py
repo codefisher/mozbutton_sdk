@@ -4,12 +4,15 @@ import json
 import codecs
 import lxml.etree as ET
 from copy import deepcopy
+from collections import namedtuple
 try:
     from PIL import Image
 except ImportError:
     pass
 
 from builder.ext_button import Button
+
+Keys = namedtuple("Keys", ['command', 'button'])
 
 class RestartlessButton(Button):
 
@@ -22,7 +25,7 @@ class RestartlessButton(Button):
         for file_name, data in self.get_jsm_files().items():
             yield (file_name + ".jsm", data)
 
-    def locale_files(self, button_locales):
+    def locale_files(self, button_locales, *args, **kwargs):
         dtd_data = button_locales.get_dtd_data(self.get_locale_strings(),
             self, untranslated=False, format_type="properties")
         for locale, data in dtd_data.items():
@@ -38,28 +41,12 @@ class RestartlessButton(Button):
     def jsm_keyboard_shortcuts(self, file_name):
         if not self._settings.get("use_keyboard_shortcuts"):
             return ""
-        statements = []
-        for i, button in enumerate(self._button_keys.keys()):
+        keys = []
+        for button in self._button_keys.keys():
             func = self._button_commands.get(file_name, {}).get(button)
-            if func is None:
-                continue
-            command = self._patch_call(func)
-            statements.append("""var key_%(num)s = document.createElement('key');
-	key_%(num)s.id = '%(button)s-key';
-	key_%(num)s.setAttribute('oncommand', 'void(0);');
-	key_%(num)s.addEventListener('command', function(event) {
-				%(command)s
-			}, false);
-	var key_disabled_%(num)s = extensionPrefs.getBoolPref("key-disabled.%(button)s");
-	key_%(num)s.setAttribute('disabled', key_disabled_%(num)s);
-	if(!key_disabled_%(num)s) {
-		setKeyCode(key_%(num)s, extensionPrefs.getComplexValue("key.%(button)s", Ci.nsIPrefLocalizedString).data);
-		key_%(num)s.setAttribute('modifiers', extensionPrefs.getComplexValue("modifier.%(button)s", Ci.nsIPrefLocalizedString).data);
-	}
-	keyset.appendChild(key_%(num)s);""" % {"num": i, "command": command, "button": button})
-        with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'keyset.js'), encoding='utf-8') as template_file:
-            template = template_file.read()
-        return template.replace('{{keys}}', '\n\t'.join(statements)).replace('{{pref_root}}', self._settings.get('pref_root'))
+            if func is not None:
+                keys.append(Keys(self._patch_call(func), button))
+        return keys
 
     def get_js_files(self):
         js_files = super(RestartlessButton, self).get_js_files()
@@ -308,17 +295,14 @@ class RestartlessButton(Button):
         return result
 
     def get_jsm_files(self):
-        with codecs.open(os.path.join(self._settings.get('button_sdk_root'), 'templates', 'button.jsm'), encoding='utf-8') as template_file:
-            template = template_file.read()
         result = {}
         simple_attrs = {'label', 'tooltiptext', 'id', 'oncommand', 'onclick', 'key', 'class'}
         button_hash, toolbar_template = self._get_toolbar_info()
+        template = self.env.get_template('button.jsm')
         for file_name, values in self._button_xul.items():
             jsm_file = []
-            js_includes = []
-            for js_file in self._get_js_file_list(file_name):
-                if js_file != "loader" and js_file in self._included_js_files:
-                    js_includes.append("""loader.loadSubScript("chrome://%s/content/%s.js", gScope);""" % (self._settings.get("chrome_name"), js_file))
+            js_includes = [js_file for js_file in self._get_js_file_list(file_name)
+                           if js_file != "loader" and js_file in self._included_js_files]
             toolbars, toolbar_ids = self._create_jsm_toolbar(button_hash, toolbar_template, file_name, values)
             count = 0
             modules = set()
@@ -343,21 +327,23 @@ class RestartlessButton(Button):
                     end.update(self._button_js_setup[js_file].values())
             if self._settings.get("menuitems") and menu:
                 end.add("toolbar_buttons.setUpMenuShower(document);")
-            result[file_name] = (template.replace('{{locale-file-prefix}}', self._settings.get("locale_file_prefix"))
-                        .replace('{{modules}}', modules_import)
-                        .replace('{{scripts}}', "\n\t".join(js_includes))
-                        .replace('{{button_ids}}', json.dumps(list(values.keys()))) # we use this not self._buttons, because of the possible generated toolbar toggle buttons
-                        .replace('{{toolbar_ids}}', json.dumps(toolbar_ids))
-                        .replace('{{toolbars}}', toolbars)
-                        .replace('{{menu_id}}', menu_id)
-                        .replace('{{ui_ids}}', json.dumps(list(self._ui_ids)))
-                        .replace('{{toolbox}}', self._settings.get("file_to_toolbar_box").get(file_name, ('', ''))[1])
-                        .replace('{{menu}}', menu)
-                        .replace('{{keys}}', self.jsm_keyboard_shortcuts(file_name))
-                        .replace('{{end}}', "\n\t".join(end))
-                        .replace('{{buttons}}', "\n\n".join(jsm_file))
-                        .replace('{{pref_root}}', self._settings.get("pref_root"))
-                        .replace('{{chrome_name}}', self._settings.get("chrome_name")))
+            result[file_name] = template.render(
+                modules=modules_import,
+                locale_file_prefix=self._settings.get("locale_file_prefix"),
+                scripts=js_includes,
+                button_ids=json.dumps(list(values.keys())),
+                toolbar_ids=json.dumps(toolbar_ids),
+                toolbars=toolbars,
+                menu_id=menu_id,
+                ui_ids=json.dumps(list(self._ui_ids)),
+                toolbox=self._settings.get("file_to_toolbar_box").get(file_name, ('', ''))[1],
+                menu=menu,
+                keys=self.jsm_keyboard_shortcuts(file_name),
+                end="\n\t".join(end),
+                buttons="\n\n".join(jsm_file),
+                pref_root=self._settings.get("pref_root"),
+                chrome_name=self._settings.get("chrome_name")
+            )
         return result
     
     def _create_jsm_toolbar(self, button_hash, toolbar_template, file_name, values):

@@ -22,7 +22,6 @@ class CButton(RestartlessButton):
         super(CButton, self).__init__(folders, buttons, settings, applications)
         self._description = {}
         self._local = None
-        self._interfaces = {}
         self._command = ""
         
         if len(buttons) != 1:
@@ -63,7 +62,7 @@ class CButton(RestartlessButton):
         return "%s %s" % (key, " ".join(mapper.get(mod, "") for mod in mods))
     
     def _dom_string_lookup(self, value):
-        result = self._local.get_string(value, self._local.get_locales()[0], button=self)
+        result = self._local.get_string(value, self._local.locales[0], button=self)
         if not result:
             result = self._local.get_string(value, self._settings.get("default_locale"), button=self)
         if "&brandShortName;" in result:
@@ -71,7 +70,7 @@ class CButton(RestartlessButton):
         return '"%s"' % result.replace("&amp;", "&").replace("&apos;", "'")
         
     def _prop_string_lookup(self, value):
-        return '"%s"' % self._local.get_string(value, self._local.get_locales()[0])
+        return '"%s"' % self._local.get_string(value, self._local.locales[0])
     
     def get_init(self, window):
         xul = self._button_xul[window][self._the_button]
@@ -120,7 +119,7 @@ class CButton(RestartlessButton):
     https://codefisher.org/toolbar_button/
 */\n%s""" % (self._settings.get("version"), self._command.replace('toolbar_buttons.', 'this.toolbar_buttons.'))
         data = {
-            "name": self._local.get_string("%s.label" % self._the_button, self._local.get_locales()[0]),
+            "name": self._local.get_string("%s.label" % self._the_button, self._local.locales[0]),
             "image": encoded_string,
             "init": init,
             "code": code,
@@ -143,7 +142,7 @@ def create_custombutton(settings, window, button_locales=None):
         locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
         button_locales = Locale(settings, locale_folders, locales)
     else:
-        button_locales = Locale(settings, local_obj=button_locales)
+        button_locales = Locale.from_locale(settings, button_locales)
     buttons = get_buttons(settings, CButton)
     buttons.set_local(button_locales)
     return buttons.create_custombuttons(window)

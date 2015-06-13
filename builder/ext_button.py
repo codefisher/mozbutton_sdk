@@ -10,6 +10,8 @@ from builder import grayscale
 from builder.util import get_pref_folders
 from collections import namedtuple
 import lxml.etree as ET
+from jinja2 import FileSystemLoader, Environment
+
 try:
     from PIL import Image
 except ImportError:
@@ -19,14 +21,18 @@ from builder.simple_button import SimpleButton, get_image
 try:
     basestring
 except NameError:
-    basestring = str #py3
+    basestring = str  # py3
 
 Menuitem = namedtuple('Menuitem', ['node', 'parent_id', 'insert_after'])
+Css = namedtuple('Css', ['selectors', 'declarations'])
+ImageBox = namedtuple('ImageBox', ['left', 'top', 'right', 'bottom'])
+
 string_match = re.compile(r"StringFromName\(\"([a-zA-Z0-9.-]*?)\"")
+
 
 class Button(SimpleButton):
     def __init__(self, folders, buttons, settings, applications):
-        self._suported_applications = set()
+        self._supported_applications = set()
         self._button_files = set()
         self._button_xul = defaultdict(dict)
 
@@ -51,6 +57,12 @@ class Button(SimpleButton):
         self._button_js_setup = defaultdict(dict)
         self._button_commands = defaultdict(dict)
         self.has_options = False
+        self._interfaces = {}
+
+        loader = FileSystemLoader([
+            os.path.join(self._settings.get('project_root'), 'files'),
+            os.path.join(self._settings.get('button_sdk_root'), 'templates')])
+        self.env = Environment(loader=loader)
 
         # we always want these file
         self._button_js["loader"]["_"] = ""
@@ -100,26 +112,26 @@ class Button(SimpleButton):
                 with open(os.path.join(folder, "option.js"), "r") as option:
                     self._button_options_js[button] = option.read()
             if "files" in files:
-                for file in os.listdir(os.path.join(folder, "files")):
-                    if file[0] != ".":
-                        self._extra_files[file] = os.path.join(folder, "files", file)
-                        if file[-3:] == ".js" or file[-4:] == '.jsm':
-                            with open(os.path.join(folder, "files", file), "r") as js_fp:
+                for file_name in os.listdir(os.path.join(folder, "files")):
+                    if file_name[0] != ".":
+                        self._extra_files[file_name] = os.path.join(folder, "files", file_name)
+                        if file_name[-3:] == ".js" or file_name[-4:] == '.jsm':
+                            with open(os.path.join(folder, "files", file_name), "r") as js_fp:
                                 self._properties_strings.update(string_match.findall(js_fp.read()))
             if "file_list" in files:
                 with open(os.path.join(folder, "file_list"), "r") as file_list:
-                    for file in file_list:
-                        if file.strip():
-                            self._extra_files[file.strip()] = os.path.join(self._settings.get("project_root"), "files", file.strip())
+                    for file_name in file_list:
+                        if file_name.strip():
+                            self._extra_files[file_name.strip()] = os.path.join(self._settings.get("project_root"), "files", file_name.strip())
             if "res" in files:
-                for file in os.listdir(os.path.join(folder, "res")):
-                    if file[0] != ".":
-                        self._res[file] = os.path.join(folder, "res", file)
+                for file_name in os.listdir(os.path.join(folder, "res")):
+                    if file_name[0] != ".":
+                        self._res[file_name] = os.path.join(folder, "res", file_name)
             if "res_list" in files:
                 with open(os.path.join(folder, "res_list"), "r") as res_list:
-                    for file in res_list:
-                        if file.strip():
-                            self._res[file.strip()] = os.path.join(self._settings.get("project_root"), "files", file.strip())
+                    for file_name in res_list:
+                        if file_name.strip():
+                            self._res[file_name.strip()] = os.path.join(self._settings.get("project_root"), "files", file_name.strip())
             if "style.css" in files:
                 with open(os.path.join(folder, "style.css"), "r") as style:
                     self._button_style[button] = style.read()
@@ -127,8 +139,8 @@ class Button(SimpleButton):
                 with open(os.path.join(folder, "modules"), "r") as modules:
                     self._modules[button].update(line.strip() for line in modules)
 
-    def get_suported_applications(self):
-        return self._suported_applications
+    def get_supported_applications(self):
+        return self._supported_applications
 
     def get_button_xul(self):
         return self._button_xul
@@ -143,13 +155,12 @@ class Button(SimpleButton):
         folder = self._button_folders[button]
         with open(os.path.join(folder, "description"), "r") as description:
             return description.read()
-        return ""
 
     def _process_xul_file(self, folder, button, xul_file, file_name):
         application = SimpleButton._process_xul_file(self, folder, button, xul_file, file_name)
         if xul_file != "%s.xul" % file_name and self._button_xul.get(file_name, {}).get(button):
             return
-        self._suported_applications.update(set(application).intersection(self._applications))
+        self._supported_applications.update(set(application).intersection(self._applications))
         self._button_files.add(file_name)
         with open(os.path.join(folder, xul_file)) as xul:
             self._button_xul[file_name][button] = xul.read().strip()
@@ -170,10 +181,10 @@ class Button(SimpleButton):
         if self._settings.get("restartless") and self._settings.get("use_keyboard_shortcuts"):
             javascript += """<script type="application/x-javascript" src="chrome://%s/content/key-option.js"/>\n""" % self._settings.get("chrome_name")
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "key-option.xul"), "r") as key_option_file:
-                key_option_tempate = key_option_file.read()
+                key_option_template = key_option_file.read()
             for button in self._button_keys.keys():
                 self._button_options["%s-key-item" % button] = ("tb-key-shortcut.option.title:lightning.png",
-                            key_option_tempate.replace("{{button}}", button).replace("{{menu_label}}", "%s.label" % button))
+                            key_option_template.replace("{{button}}", button).replace("{{menu_label}}", "%s.label" % button))
                 self._button_applications["%s-key-item" % button] = self._applications
         with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "option.xul"), "r") as overlay_window_file:
             overlay_window = (overlay_window_file.read()
@@ -181,40 +192,41 @@ class Button(SimpleButton):
                        .replace("{{locale_file_prefix}}", self._settings.get("locale_file_prefix"))
                        .replace("{{javascript}}", javascript))
         if self._settings.get("menuitems"):
-            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "showmenu-option.xul"), "r") as menu_option_file:
-                menu_option_tempate = menu_option_file.read() 
+            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "show-menu-option.xul"), "r") as menu_option_file:
+                menu_option_template = menu_option_file.read()
             if self._settings.get("menu_placement") is None and self._settings.get("menu_meta"):
                 menu_id, menu_label, location = self._settings.get("menu_meta")
                 self._button_options[menu_id] = ("tb-show-a-menu.option.title:menu.png", 
-                        menu_option_tempate.replace("{{menu_id}}", menu_id).replace("{{menu_label}}", menu_label))
+                        menu_option_template.replace("{{menu_id}}", menu_id).replace("{{menu_label}}", menu_label))
                 self._button_applications[menu_id] = self._applications
             else:
                 menu_placement = self._settings.get("menu_placement")
                 for button in self._buttons:
                     if button in self._settings.get("menuitems") or (type(menu_placement) == dict and button in menu_placement):
                         self._button_options["%s-menu-item" % button] = ("tb-show-a-menu.option.title:menu.png",
-                            menu_option_tempate.replace("{{menu_id}}", "%s-menu-item" % button).replace("{{menu_label}}", "%s.label" % button))
+                            menu_option_template.replace("{{menu_id}}", "%s-menu-item" % button).replace("{{menu_label}}", "%s.label" % button))
                         self._button_applications["%s-menu-item" % button] = self._applications
         files = defaultdict(dict)
-        def append(files, application, first, data):
+
+        def append(app, first, data):
             meta = first.strip().split(':')
             if len(meta) == 2:
                 title, icon = meta
             else:
                 title, icon, appslist = meta
-                if application not in appslist.split():
+                if app not in appslist.split():
                     return
-            if title in files[application]:
-                files[application][title]['data'].append(data)
+            if title in files[app]:
+                files[app][title]['data'].append(data)
             else:
-                files[application][title] = {'data': [data], 'icon': icon}
+                files[app][title] = {'data': [data], 'icon': icon}
         for button, (first, data) in self._button_options.items():
             for application in self._button_applications[button]:
                 self._option_applications.add(application)
-                append(files, application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
+                append(application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
         for button, items in self._application_button_options.items():
             for application, (first, data) in items.items():
-                append(files, application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
+                append(application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
         if self._pref_list:
             limit = ".xul,".join(self._pref_list.keys()) + ".xul"
             pref_files = get_pref_folders(limit, self._settings)
@@ -230,7 +242,7 @@ class Button(SimpleButton):
                         applications.add(application)
                     self._button_options[file_name] = (first, data)
                 for application in applications:
-                    append(files, application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
+                    append(application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
         for application, data in files.items():
             button_pref = []
             for panel, info in data.items():
@@ -275,7 +287,7 @@ class Button(SimpleButton):
         """
         For option locales to be included, the get_options() method has to be called first
         """
-        for locale, files in button_locales.get_files():
+        for locale, files in button_locales.files:
             for file_name in files:
                 with codecs.open(file_name, encoding='utf-8') as fp:
                     yield locale, file_name, fp.read()
@@ -339,7 +351,7 @@ class Button(SimpleButton):
             strings.extend(locale_match.findall(value))
         return list(set(strings))
 
-    def get_defaults(self, format_dict=False):
+    def get_defaults(self):
         settings = []
         pref_root = self._settings.get("pref_root")
         chrome_name = self._settings.get("chrome_name")
@@ -364,10 +376,7 @@ class Button(SimpleButton):
                     settings.append(("%sshowamenu.%s-menu-item" % (pref_root, button), self._settings.get("default_show_menu_pref")))
         for name, value in self._preferences.items():
             settings.append(("%s%s" % (pref_root, name), value))
-        if format_dict:
-            return "\n\t".join("%s: %s," % setting for setting in settings)
-        else:
-            return "\n".join("pref('%s', %s);" % setting for setting in settings)
+        return "\n".join("pref('%s', %s);" % setting for setting in settings)
     
     def get_icon_size(self):
         small, large = self._settings.get("icon_size")
@@ -385,180 +394,199 @@ class Button(SimpleButton):
             icon_size["menu"] = "16"
         return icon_size
 
-    def get_css_file(self, toolbars=None):
-        result_images = defaultdict(set)
-        image_datas = {}
-        style_file = os.path.join(self._settings.get("project_root"), "files", "button.css")
-        if not os.path.isfile(style_file):
-            style_file = os.path.join(self._settings.get('button_sdk_root'), "templates", "button.css")
-        with codecs.open(style_file,"r", encoding='utf-8') as f:
-            template = f.read()
-        lines = [template]
-        values = {"chrome_name": self._settings.get("chrome_name")}
+    @staticmethod
+    def _get_selectors(button, group_menu_name, icon_size_set, icon_sizes, modifier):
+        selectors = dict((key, list()) for key in icon_size_set)
+        if modifier and (modifier[0] == ' ' or modifier[0] == '$'):
+            sizes = {'menuitem': '16'}
+        else:
+            sizes = icon_sizes
+        for name, size in sizes.items():
+            if size is None:
+                continue
+            if name == "small":
+                selectors[size].append("toolbar[iconsize='small'] toolbarbutton#{}{}".format(button, modifier))
+            elif name == "large":
+                selectors[size].append("toolbar toolbarbutton#{}{}".format(button, modifier))
+            elif name == "menu":
+                if button == group_menu_name:
+                    selectors[size].append("menu#{}".format(button))
+                    selectors[size].append("menuitem#{}".format(button))
+                else:
+                    selectors[size].append("menu#{}-menu-item{}".format(button, modifier))
+                    selectors[size].append("menuitem#{}-menu-item{}".format(button, modifier))
+            elif name == "window" or name == 'menuitem':
+                if modifier and modifier[0] == '$':
+                    selectors[size].append(modifier[1:])
+                else:
+                    selectors[size].append("#{}{}".format(button, modifier))
+                    selectors[size].append("#{}-menu-item{}".format(button, modifier))
+        return selectors
+
+    @staticmethod
+    def _box_cmp(x, offset, size):
+        y_offset = offset // x
+        x_offset = offset % x
+        return ImageBox(x_offset * int(size), y_offset * int(size), (x_offset + 1) * int(size), (y_offset + 1) * int(size))
+
+    def _css_setup(self):
         icon_sizes = self.get_icon_size()
-        icon_size_set = set(icon_sizes.values())
-        icon_size_set.add("16") # needed for some selectors that assume this size
-        image_map = {}
+        icon_size_set = {size for size in icon_sizes.values() if size is not None}
+        icon_size_set.add("16")  # needed for some selectors that assume this size
         group_menu_name = self._settings.get("menu_meta")[0] if self._settings.get("menu_meta") else None
         if self._settings.get("icon") and self._settings.get('menu_placement') is None and group_menu_name:
             self._button_image[group_menu_name] = [(self._settings.get("icon"), ' ')]
-        if self._settings.get("merge_images"):
-            image_set = set()
-            for button, image_data in self._button_image.items():
-                for image, modifier in image_data:
-                    image_set.add(image)
-            image_count = len(image_set)
-            image_map_size = {}
-            image_map_x = {}
-            for size in icon_size_set:
-                if size is not None:
-                    y, x = int(math.ceil(image_count*int(size) / 1000.0)), (1000 // int(size))
-                    if y == 1:
-                        x = image_count
-                    image_map_x[size] = x
-                    image_map_size[size] = Image.new("RGBA", (x * int(size), y * int(size)), (0, 0, 0, 0))
-        count = 0
-        offset = 0
-        def box_cmp(x, offset):
-            y_offset = offset // x
-            x_offset = offset % x
-            return (x_offset * int(size), y_offset * int(size), (x_offset + 1) * int(size), (y_offset + 1) * int(size))
+        return group_menu_name, icon_size_set, icon_sizes
+
+    def _get_css(self):
+        result_images = defaultdict(set)
+        image_datas = {}
+        css_data = []
+        chrome_name = self._settings.get("chrome_name")
+        group_menu_name, icon_size_set, icon_sizes = self._css_setup()
         for button, image_data in self._button_image.items():
-            values["id"] = button
             for image, modifier in image_data:
                 original_image = image
                 if image[0] == "*" or image[0] == "-":
-                    name = list(image[1:].rpartition('.'))
-                    name.insert(1, "-disabled")
-                    _image = "".join(name)
-                    opacity = 1.0 if image[0] == "-" else 0.9
-                    
-                    try:
-                        data = {}
-                        for size in icon_size_set:
-                            if size is not None:
-                                data[size] = grayscale.image_to_graysacle(get_image(self._settings, size, image[1:]), opacity)
-                    except ValueError:
-                        print("image %s does not exist" % image)
+                    data, image = self.create_grayscale(icon_size_set, image)
+                    if data is None:
                         continue
-                    if self._settings.get("merge_images"):
-                        if image_map.get(_image) is not None:
-                            offset = image_map.get(_image)
-                        else:
-                            offset = count
-                            image_map[_image] = offset
-                            for size in icon_size_set:
-                                if size is not None:
-                                    image_map_size[size].paste(Image.open(io.BytesIO(data[size])), box_cmp(image_map_x[size], offset))
-                            count += 1
-                    else:
-                        offset = count
-                        for size in icon_size_set:
-                            if size is not None:
-                                image_datas[os.path.join("skin", size, _image)] = data[size]
-                        count += 1
-                    image = _image
-                else:
-                    if self._settings.get("merge_images"):
-                        if image_map.get(image) is not None:
-                            offset = image_map.get(image)
-                        else:
-                            try:
-                                offset = count
-                                image_map[image] = offset
-                                for size in icon_size_set:
-                                    if size is not None:
-                                        # TODO: need to also check if this icon will never be needed
-                                        #if modifier and (modifier[0] == ' ' or modifier[0] == '$') and size != '16':
-                                        #    continue
-                                        im = Image.open(get_image(self._settings, size, image))
-                                        image_map_size[size].paste(im, box_cmp(image_map_x[size], offset))
-                                count += 1
-                            except IOError:
-                                print("image %s does not exist" % image)
-                            except ValueError as e:
-                                print("count not use image: %s" % image)
-                    else:
-                        offset = count
-                        count += 1
-                selectors = dict((key, list()) for key in icon_size_set)
-                if modifier and (modifier[0] == ' ' or modifier[0] == '$'):
-                    sizes = {'menuitem': '16'}
-                else:
-                    sizes = icon_sizes
-                for name, size in sizes.items():
-                    if size is None:
-                        continue
-                    if name == "small":
-                        selectors[size].append("toolbar[iconsize='small'] toolbarbutton#%s%s" % (button, modifier))
-                    elif name == "large":
-                        selectors[size].append("toolbar toolbarbutton#%s%s" % (button, modifier))
-                    elif name == "menu":
-                        if button == group_menu_name:
-                            selectors[size].append("menu#%s" % button)
-                            selectors[size].append("menuitem#%s" % button)
-                        else:
-                            selectors[size].append("menu#%s-menu-item%s" % (button, modifier))
-                            selectors[size].append("menuitem#%s-menu-item%s" % (button, modifier))
-                    elif name == "window" or name == 'menuitem':
-                        if modifier and modifier[0] == '$':
-                            selectors[size].append(modifier[1:])
-                        else:
-                            selectors[size].append("#%s%s" % (button, modifier))
-                            selectors[size].append("#%s-menu-item%s" % (button, modifier))
-                if self._settings.get("merge_images"):
                     for size in icon_size_set:
-                        if size is not None and len(selectors[size]):
-                            values["size"] = size        
-                            values["selectors"] = ", ".join(selectors[size])
-                            left, top, right, bottom = box_cmp(image_map_x[size], offset)
-                            values.update({"top": top, "left": left, "bottom": bottom, "right": right})
-                            lines.append("""%(selectors)s {"""
-                                     """\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/button.png");"""
-                                     """\n\t-moz-image-region: rect(%(top)spx %(right)spx %(bottom)spx %(left)spx);\n}""" % values)
-                else:
-                    values["image"] = image
-                    for size in icon_size_set:
-                        if size is not None and len(selectors[size]):
-                            if original_image[0] != "*" and original_image[0] != "-":
-                                result_images[size].add(image)
-                            values["size"] = size
-                            values["selectors"] = ", ".join(selectors[size])   
-                            lines.append("""%(selectors)s {\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/%(image)s");"""
-                                     """\n\t-moz-image-region: rect(0px %(size)spx %(size)spx 0px);\n}""" % values)
-        if self._settings.get("merge_images"):
+                        image_datas[os.path.join("skin", size, image)] = data[size]
+                selectors = self._get_selectors(button, group_menu_name, icon_size_set, icon_sizes, modifier)
+                for size in (size for size in icon_size_set if len(selectors[size])):
+                    if original_image[0] != "*" and original_image[0] != "-":
+                        result_images[size].add(image)
+                    declarations = [
+                        """list-style-image:url("chrome://{chrome_name}/skin/{size}/{image}");""".format(chrome_name=chrome_name, size=size, image=image),
+                        """-moz-image-region: rect(0px {size}px {size}px 0px);""".format(size=size)
+                    ]
+                    css_data.append(Css(
+                        selectors=",\n".join(selectors[size]),
+                        declarations=declarations))
+        return icon_sizes, image_datas, css_data, result_images
+
+    def create_grayscale(self, icon_size_set, image):
+        name = list(image[1:].rpartition('.'))
+        name.insert(1, "-disabled")
+        new_image = "".join(name)
+        opacity = 1.0 if image[0] == "-" else 0.9
+        data = {}
+        try:
             for size in icon_size_set:
-                if size is not None:
-                    size_io = io.BytesIO()
-                    image_map_size[size].save(size_io, "png")
-                    image_datas[os.path.join("skin", size, "button.png")] = size_io.getvalue()
-                    size_io.close()
+                data[size] = grayscale.image_to_graysacle(
+                        get_image(self._settings, size, image[1:]), opacity)
+            return data, new_image
+        except ValueError:
+            print("image %s does not exist" % image)
+        return None, None
+
+    def _get_css_merge(self):
+        result_images = defaultdict(set)
+        image_datas = {}
+        group_menu_name, icon_size_set, icon_sizes = self._css_setup()
+        image_map = {}
+        image_set = set()
+        css_data = []
+        chrome_name = self._settings.get("chrome_name")
+        for button, image_data in self._button_image.items():
+            for image, modifier in image_data:
+                image_set.add(image)
+        image_count = len(image_set)
+        image_map_size = {}
+        image_map_x = {}
+        for size in icon_size_set:
+            y, x = int(math.ceil(image_count * int(size) / 1000.0)), (1000 // int(size))
+            if y == 1:
+                x = image_count
+            image_map_x[size] = x
+            image_map_size[size] = Image.new("RGBA", (x * int(size), y * int(size)), (0, 0, 0, 0))
+        count = 0
+        offset = 0
+
+        def merge_image(count, func, image):
+            image_map[image] = count
+            for size in icon_size_set:
+                # TODO: need to also check if this icon will never be needed
+                # if modifier and (modifier[0] == ' ' or modifier[0] == '$') and size != '16':
+                # continue
+                image_map_size[size].paste(func(image, size), self._box_cmp(image_map_x[size], count, size))
+            return count + 1, count
+        for button, image_data in self._button_image.items():
+            for image, modifier in image_data:
+                if image[0] == "*" or image[0] == "-":
+                    data, image = self.create_grayscale(icon_size_set, image)
+                    if data is None:
+                        continue
+
+                    def gray_image(image, size):
+                        return Image.open(io.BytesIO(data[size]))
+                    if image_map.get(image) is not None:
+                        offset = image_map.get(image)
+                    else:
+                        count, offset = merge_image(count, gray_image, image)
+                else:
+                    if image_map.get(image) is not None:
+                        offset = image_map.get(image)
+                    else:
+                        def create_image(image, size):
+                            return Image.open(get_image(self._settings, size, image))
+                        try:
+                            count, offset = merge_image(count, create_image, image)
+                        except IOError:
+                            print("image %s does not exist" % image)
+                        except ValueError:
+                            print("count not use image: %s" % image)
+                selectors = self._get_selectors(button, group_menu_name, icon_size_set, icon_sizes, modifier)
+                for size in (size for size in icon_size_set if len(selectors[size])):
+                    image_box = self._box_cmp(image_map_x[size], offset, size)
+                    declarations = [
+                        """list-style-image:url("chrome://{chrome_name}/skin/{size}/button.png");""".format(chrome_name=chrome_name, size=size),
+                        """-moz-image-region: rect({top}px {right}px {bottom}px {left}px)""".format(**image_box._asdict())
+                    ]
+                    css_data.append(Css(
+                        selectors=",\n".join(selectors[size]),
+                        declarations=declarations))
+        for size in icon_size_set:
+            size_io = io.BytesIO()
+            image_map_size[size].save(size_io, "png")
+            image_datas[os.path.join("skin", size, "button.png")] = size_io.getvalue()
+            size_io.close()
+        return icon_sizes, image_datas, css_data, result_images
+
+    def get_css_file(self):
+        template = self.env.get_template("button.css")
+        if self._settings.get("merge_images"):
+            icon_sizes, image_datas, css_data, result_images = self._get_css_merge()
+        else:
+            icon_sizes, image_datas, css_data, result_images = self._get_css()
+        chrome_name = self._settings.get("chrome_name")
         if self._settings.get("include_toolbars"):
             for name, selector in (('small', "toolbar[iconsize='small'] .toolbar-buttons-toolbar-toggle"),
                                    ('large', 'toolbar .toolbar-buttons-toolbar-toggle'), 
                                    ('window', '.toolbar-buttons-toolbar-toggle')):
                 if icon_sizes[name] is not None:
                     result_images[icon_sizes[name]].add(self._settings.get("icon"))
-                    lines.append(('''%(selector)s {'''
-                    '''\n\tlist-style-image:url("chrome://%(chrome_name)s/skin/%(size)s/%(icon)s");'''
-                    '''\n}''') % {"size": icon_sizes[name], "selector": selector,
-                       "icon": self._settings.get("icon"),
-                       "chrome_name": self._settings.get("chrome_name")})
-        for item in set(self._button_style.values()):
-            lines.append(item)
-        return "\n".join(lines), result_images, image_datas
+                    css_data.append(Css(
+                        selectors=selector,
+                        declarations="""list-style-image:url("chrome://{chrome_name}/skin/{size}/{icon}");))""".format(icon=self._settings.get("icon"), size=icon_sizes[name], chrome_name=chrome_name)))
+        css = template.render(
+            blocks=set(self._button_style.values()),
+            css_data=css_data
+        )
+        return css, result_images, image_datas
 
     def get_js_files(self):
         interface_match = re.compile(r"(?<=toolbar_buttons.interfaces.)[a-zA-Z]*")
-        function_match = re.compile(r"^[a-zA-Z0-9_]*\s*:\s*(?:function\([^\)]*\)\s*)?{.*?^}[^\n]*",
+        function_match = re.compile(r"^[a-zA-Z0-9_]*\s*:\s*(?:function\([^\)]*\)\s*)?\{.*?^\}[^\n]*",
                                     re.MULTILINE | re.DOTALL)
-        function_name_match = re.compile(r"((^[a-zA-Z0-9_]*)\s*:\s*(?:function\s*\([^\)]*\)\s*)?{.*?^})",
+        function_name_match = re.compile(r"((^[a-zA-Z0-9_]*)\s*:\s*(?:function\s*\([^\)]*\)\s*)?\{.*?^\})",
                                           re.MULTILINE | re.DOTALL)
         include_match = re.compile(r"(?<=^#include )[a-zA-Z0-9_]*",
                                    re.MULTILINE)
         include_match_replace = re.compile(r"^#include [a-zA-Z0-9_]*\n?",
                                            re.MULTILINE)
-        detect_depandancy = re.compile(r"(?<=toolbar_buttons.)[a-zA-Z]*")
+        detect_dependency = re.compile(r"(?<=toolbar_buttons.)[a-zA-Z]*")
 
         multi_line_replace = re.compile(r"\n{2,}")
         js_files = defaultdict(str)
@@ -569,7 +597,7 @@ class Button(SimpleButton):
         # we look though the XUL for functions first
         for file_name, values in self._button_xul.items():
             for button, xul in values.items():
-                js_imports.update(detect_depandancy.findall(xul))
+                js_imports.update(detect_dependency.findall(xul))
         if self._settings.get("menuitems"):
             js_imports.add("sortMenu")
             js_imports.add("handelMenuLoaders")
@@ -582,7 +610,7 @@ class Button(SimpleButton):
             js_includes.update(include_match.findall(js_file))
             js_file = include_match_replace.sub("", js_file)
             js_functions = function_match.findall(js_file)
-            js_imports.update(detect_depandancy.findall(js_file))
+            js_imports.update(detect_dependency.findall(js_file))
             if js_functions:
                 js_functions.sort(key=lambda x: x.lower())
                 js_files[file_name] = "\t" + "\n\t".join(
@@ -609,9 +637,9 @@ class Button(SimpleButton):
         loop_imports = js_imports
         while loop_imports:
             new_extra = [externals[func_name] for func_name in loop_imports
-                           if func_name in js_imports if func_name in externals]
+                    if func_name in js_imports if func_name in externals]
             extra_functions.extend(new_extra)
-            new_imports = set(detect_depandancy.findall("\n".join(new_extra)))
+            new_imports = set(detect_dependency.findall("\n".join(new_extra)))
             loop_imports = new_imports.difference(js_imports)
             js_imports.update(loop_imports)
 
@@ -634,26 +662,26 @@ class Button(SimpleButton):
         if self._button_options_js:
             extra_javascript = []
             for button, (first, data) in self._button_options.items():
-                js_options_include.update(detect_depandancy.findall(data))
+                js_options_include.update(detect_dependency.findall(data))
             for button, value in self._button_options_js.items():
-                #TODO: dependency resolution is not enabled here yet
+                # TODO: dependency resolution is not enabled here yet
                 js_options_include.update(include_match.findall(value))
-                js_options_include.update(detect_depandancy.findall(self._button_options[button][1]))
+                js_options_include.update(detect_dependency.findall(self._button_options[button][1]))
                 value = include_match_replace.sub("", value)
                 js_functions = function_match.findall(value)
                 self._button_options_js[button] = ",\n".join(js_functions)
                 extra_javascript.append(multi_line_replace.sub("\n",
-                                        function_match.sub("", value).strip()));
+                                        function_match.sub("", value).strip()))
             self._button_options_js.update(dict((name, function) for name, function
                                in externals.items() if name in js_options_include))
             with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "option.js")) as option_fp:
                 js_files["option"] = (option_fp.read()
                     % ("\n\t".join(",\n".join(val for val in self._button_options_js.values() if val).split("\n")), "\n".join(extra_javascript)))
-        inerface_file = os.path.join(self._settings.get('project_root'), 'files', 'interfaces')
-        if not os.path.isfile(inerface_file):
-            inerface_file = os.path.join(self._settings.get('button_sdk_root'), 'templates', 'interfaces')
+        interfaces_file = os.path.join(self._settings.get('project_root'), 'files', 'interfaces')
+        if not os.path.isfile(interfaces_file):
+            interfaces_file = os.path.join(self._settings.get('button_sdk_root'), 'templates', 'interfaces')
         interfaces = {}
-        with open(inerface_file, "r") as interfaces_data:
+        with open(interfaces_file, "r") as interfaces_data:
             for line in interfaces_data:
                 name, _ = line.split(":")
                 interfaces[name] = line.strip()
@@ -745,7 +773,8 @@ class Button(SimpleButton):
                 data[button_id] = Menuitem(root, None, None)
         return data
 
-    def _list_has_str(self, lst, text):
+    @staticmethod
+    def _list_has_str(lst, text):
         for item in lst:
             if text in item:
                 return True
@@ -794,12 +823,12 @@ class Button(SimpleButton):
                     if self._settings.get("put_button_on_toolbar"):
                         defaultset = 'defaultset="%s"' % ",".join(buttons[i * max_count:(i + 1) * max_count])
                     button_hash.update(str(i))
-                    hash = button_hash.hexdigest()[:6]
+                    hash_code = button_hash.hexdigest()[:6]
                     label_number = "" if (number + count) == 1 else " %s" % (i + count + 1)
-                    toolbar_ids.append("tb-toolbar-%s" % hash)
+                    toolbar_ids.append("tb-toolbar-%s" % hash_code)
                     toolbar_box_id = "" if include_setting == "include_toolbars" else 'toolboxid="%s" ' % toolbar_box
-                    toolbars.append('''<toolbar %spersist="collapsed,hidden" context="toolbar-context-menu" class="toolbar-buttons-toolbar chromeclass-toolbar" id="tb-toolbar-%s" mode="icons" iconsize="small" customizable="true" %s toolbarname="&tb-toolbar-buttons-toggle-toolbar.name;%s"/>''' % (toolbar_box_id, hash, defaultset, label_number))
-                    values["tb-toolbar-buttons-toggle-toolbar-%s" % hash] = toolbar_template.replace("{{hash}}", hash).replace("{{ number }}", label_number)
+                    toolbars.append('''<toolbar %spersist="collapsed,hidden" context="toolbar-context-menu" class="toolbar-buttons-toolbar chromeclass-toolbar" id="tb-toolbar-%s" mode="icons" iconsize="small" customizable="true" %s toolbarname="&tb-toolbar-buttons-toggle-toolbar.name;%s"/>''' % (toolbar_box_id, hash_code, defaultset, label_number))
+                    values["tb-toolbar-buttons-toggle-toolbar-%s" % hash_code] = toolbar_template.replace("{{hash}}", hash_code).replace("{{ number }}", label_number)
                 count += number
         return tool_bars, bottom_bars, toolbar_ids
     
@@ -814,7 +843,6 @@ class Button(SimpleButton):
             toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
             result.append('\n<%s id="%s">\n%s\n</%s>' % (toolbar_node, toolbar_box, '\n'.join(toolbars), toolbar_node))
         return "\n\t".join(result), toolbar_ids
-        
 
     def _get_toolbar_info(self):
         button_hash = None
@@ -831,6 +859,6 @@ class Button(SimpleButton):
         for group_file in group_files:
             if self._has_javascript and group_file in self._button_js and file_name in self._settings.get("file_map")[group_file]:
                 js_files.append(group_file)
-        if  self._has_javascript and file_name in self._button_js and file_name not in js_files:
+        if self._has_javascript and file_name in self._button_js and file_name not in js_files:
             js_files.append(file_name)
         return js_files

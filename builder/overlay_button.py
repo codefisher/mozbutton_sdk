@@ -41,7 +41,7 @@ class OverlayButton(Button):
         for file_name, data in self.get_xul_files().items():
             yield (file_name + ".xul", data)
 
-    def locale_files(self, button_locales):
+    def locale_files(self, button_locales, *args, **kwargs):
         dtd_data = button_locales.get_dtd_data(self.get_locale_strings(),
             self, untranslated=False)
         for locale, data in dtd_data.items():

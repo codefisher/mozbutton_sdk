@@ -44,11 +44,13 @@ var toolbar_buttons = {
 var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getService(Ci.mozIJSSubScriptLoader);
 var gScope = this;
 // the number at the end forces a reload of the properties file, since sometimes it it catched when we don't want
-var buttonStrings = new StringBundle("chrome://{{chrome_name}}/locale/{{locale-file-prefix}}button_labels.properties?time=" + Date.now().toString());
+var buttonStrings = new StringBundle("chrome://{{chrome_name}}/locale/{{locale_file_prefix}}button_labels.properties?time=" + Date.now().toString());
 
 function setupButtons() {
 	var extensionPrefs = Cc['@mozilla.org/preferences-service;1'].getService(Ci.nsIPrefService).getBranch("{{pref_root}}");
-	{{scripts}}
+	{%- for script in scripts %}
+	loader.loadSubScript("chrome://{{chrome_name}}/content/{{script}}.js", gScope);
+	{%- endfor %}
 	// All these get wrapped in a try catch in case there is another button
 	// with the same ID, which would throw an error.
 	{{buttons}}
@@ -64,7 +66,86 @@ function loadButtons(window) {
 	{{toolbars}}
 	registerToolbars(window, document, {{toolbar_ids}});
 	// we create the keys, then the menu items, so the menu items get connected to the keys
-	{{keys}}
+	{%- if keys %}
+	var keyset = document.getElementById('mainKeyset');
+	if(!keyset) {
+		var keyset = document.createElement('keyset');
+		keyset.id = 'mainKeyset';
+		document.documentElement.appendChild(keyset);
+	}
+	function setKeyCode(key, keycode) {
+		if(keycode.length == 1) {
+			key.setAttribute('key', keycode);
+			key.removeAttribute('keycode');
+		} else {
+			key.setAttribute('keycode', keycode);
+			key.removeAttribute('key');
+		}
+	}
+	function getLocalisedPref(name) {
+		return extensionPrefs.getComplexValue(name, Ci.nsIPrefLocalizedString).data;
+	}
+	{%- for command, button in keys %}
+	var key_{{loop.index}} = document.createElement('key');
+	key_{{loop.index}}.id = '{{button}}-key';
+	key_{{loop.index}}.setAttribute('oncommand', 'void(0);');
+	key_{{loop.index}}.addEventListener('command', function(event) {
+		{{command}}
+	}, false);
+	var key_disabled_{{loop.index}} = extensionPrefs.getBoolPref("key-disabled.{{button}}");
+	key_{{loop.index}}.setAttribute('disabled', key_disabled_{{loop.index}});
+	if(!key_disabled_{{loop.index}}) {
+		setKeyCode(key_{{loop.index}}, getLocalisedPref("key.{{button}}"));
+		key_{{loop.index}}.setAttribute('modifiers', getLocalisedPref("modifier.{{button}}"));
+	}
+	keyset.appendChild(key_{{loop.index}});
+	{%- endfor %}
+	function keyMove(key) {
+		var keyset = key.parentNode;
+		var root = keyset.parentNode;
+		var newKeyset = document.createElement('keyset');
+		root.appendChild(newKeyset);
+		newKeyset.appendChild(key);
+		var items = document.getElementsByAttribute('key', key.id);
+		for(var i = 0; i < items.length; ++i) {
+			var item = items[i];
+			item.removeAttribute('key');
+			item.setAttribute('key', key.id);
+		}
+		if(keyset.childNodes.length == 0) {
+			keyset.parentNode.removeChild(keyset);
+		}
+	}
+	var keyWatcher = new toolbar_buttons.settingWatcher('{{pref_root}}key.', function(subject, topic, data) {
+		var key = document.getElementById(data + '-key');
+		var keycode = getLocalisedPref("key." + data);
+		setKeyCode(key, keycode);
+		keyMove(key);
+	});
+	keyWatcher.startup();
+	var modifiersWatcher = new toolbar_buttons.settingWatcher('{{pref_root}}modifier.', function(subject, topic, data) {
+		var key = document.getElementById(data + '-key');
+		var modifiers = getLocalisedPref("modifier." + data);
+		key.setAttribute('modifiers', modifiers);
+		keyMove(key);
+	});
+	modifiersWatcher.startup();
+	var keyDisabledWatcher = new toolbar_buttons.settingWatcher('{{pref_root}}key-disabled.', function(subject, topic, data) {
+		var key = document.getElementById(data + '-key');
+		var disabled = extensionPrefs.getBoolPref('key-disabled.' + data)
+		key.setAttribute('disabled', disabled);
+		if(disabled) {
+			key.removeAttribute('keycode');
+			key.removeAttribute('key');
+			key.removeAttribute('modifiers');
+		} else {
+			setKeyCode(key, getLocalisedPref("key." + data));
+			key.setAttribute('modifiers', getLocalisedPref("modifier." + data));
+		}
+		keyMove(key);
+	});
+	keyDisabledWatcher.startup();
+	{%- endif %}
 	{{menu}}
 	{{end}}
 }
