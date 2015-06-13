@@ -47,8 +47,8 @@ class Button(SimpleButton):
         self._option_applications = set()
         self._has_javascript = False
         self._manifest = []
-        self._extra_files = {}
-        self._res = {}
+        self.extra_files = {}
+        self.resource_files = {}
         self._pref_list = defaultdict(list)
         self._button_style = {}
         self._option_titles = set()
@@ -114,24 +114,21 @@ class Button(SimpleButton):
             if "files" in files:
                 for file_name in os.listdir(os.path.join(folder, "files")):
                     if file_name[0] != ".":
-                        self._extra_files[file_name] = os.path.join(folder, "files", file_name)
+                        self.extra_files[file_name] = os.path.join(folder, "files", file_name)
                         if file_name[-3:] == ".js" or file_name[-4:] == '.jsm':
                             with open(os.path.join(folder, "files", file_name), "r") as js_fp:
                                 self._properties_strings.update(string_match.findall(js_fp.read()))
-            if "file_list" in files:
-                with open(os.path.join(folder, "file_list"), "r") as file_list:
-                    for file_name in file_list:
-                        if file_name.strip():
-                            self._extra_files[file_name.strip()] = os.path.join(self._settings.get("project_root"), "files", file_name.strip())
             if "res" in files:
                 for file_name in os.listdir(os.path.join(folder, "res")):
                     if file_name[0] != ".":
-                        self._res[file_name] = os.path.join(folder, "res", file_name)
-            if "res_list" in files:
-                with open(os.path.join(folder, "res_list"), "r") as res_list:
-                    for file_name in res_list:
-                        if file_name.strip():
-                            self._res[file_name.strip()] = os.path.join(self._settings.get("project_root"), "files", file_name.strip())
+                        self.resource_files[file_name] = os.path.join(folder, "res", file_name)
+            for file_name, obj in (
+                    ('res_list', self.resource_files), 'file_list', self.extra_files):
+                if file_name in files:
+                    with open(os.path.join(folder, file_name), "r") as res_list:
+                        for file_name in (file_name.strip()
+                                for file_name in res_list if file_name.strip()):
+                            obj[file_name] = os.path.join(self._settings.get("project_root"), "files", file_name)
             if "style.css" in files:
                 with open(os.path.join(folder, "style.css"), "r") as style:
                     self._button_style[button] = style.read()
@@ -142,15 +139,6 @@ class Button(SimpleButton):
     def get_supported_applications(self):
         return self._supported_applications
 
-    def get_button_xul(self):
-        return self._button_xul
-
-    def get_extra_files(self):
-        return self._extra_files
-
-    def get_resource_files(self):
-        return self._res
-    
     def get_description(self, button):
         folder = self._button_folders[button]
         with open(os.path.join(folder, "description"), "r") as description:
@@ -330,7 +318,7 @@ class Button(SimpleButton):
     def get_extra_locale_strings(self):
         locale_match = re.compile("&([a-zA-Z0-9.-]*);")
         strings = []
-        for file_name in self._extra_files.values():
+        for file_name in self.extra_files.values():
             with open(file_name, 'r') as xul:
                 strings.extend(locale_match.findall(xul.read()))
         strings = list(set(strings))
@@ -582,10 +570,6 @@ class Button(SimpleButton):
                                     re.MULTILINE | re.DOTALL)
         function_name_match = re.compile(r"((^[a-zA-Z0-9_]*)\s*:\s*(?:function\s*\([^\)]*\)\s*)?\{.*?^\})",
                                           re.MULTILINE | re.DOTALL)
-        include_match = re.compile(r"(?<=^#include )[a-zA-Z0-9_]*",
-                                   re.MULTILINE)
-        include_match_replace = re.compile(r"^#include [a-zA-Z0-9_]*\n?",
-                                           re.MULTILINE)
         detect_dependency = re.compile(r"(?<=toolbar_buttons.)[a-zA-Z]*")
 
         multi_line_replace = re.compile(r"\n{2,}")
@@ -607,8 +591,6 @@ class Button(SimpleButton):
 
         for file_name, js in self._button_js.items():
             js_file = "\n".join(js.values())
-            js_includes.update(include_match.findall(js_file))
-            js_file = include_match_replace.sub("", js_file)
             js_functions = function_match.findall(js_file)
             js_imports.update(detect_dependency.findall(js_file))
             if js_functions:
@@ -665,9 +647,7 @@ class Button(SimpleButton):
                 js_options_include.update(detect_dependency.findall(data))
             for button, value in self._button_options_js.items():
                 # TODO: dependency resolution is not enabled here yet
-                js_options_include.update(include_match.findall(value))
                 js_options_include.update(detect_dependency.findall(self._button_options[button][1]))
-                value = include_match_replace.sub("", value)
                 js_functions = function_match.findall(value)
                 self._button_options_js[button] = ",\n".join(js_functions)
                 extra_javascript.append(multi_line_replace.sub("\n",

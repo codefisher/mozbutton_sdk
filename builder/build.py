@@ -118,15 +118,14 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
                 locale_prefix + file_name), bytes_string(data))
         locales_inuse.add(locale)
 
-    for name, path in buttons.get_extra_files().items():
+    for name, path in buttons.extra_files.items():
         with codecs.open(path, encoding='utf-8') as fp:
             xpi.writestr(os.path.join("chrome", "content", "files", name), 
                          bytes_string(fp.read().replace("{{chrome_name}}", settings.get("chrome_name"))
                             .replace("{{pref_root}}", settings.get("pref_root"))
                             .replace("{{locale_file_prefix}}", settings.get("locale_file_prefix"))))
-    resources = buttons.get_resource_files()
-    has_resources = bool(resources)
-    for name, path in resources.items():
+    has_resources = bool(buttons.resource_files)
+    for name, path in buttons.resource_files.items():
         xpi.write(path, os.path.join("chrome", "content", "resources", name))
     
     css, result_images, image_data = buttons.get_css_file()

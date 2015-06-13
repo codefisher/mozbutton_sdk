@@ -62,6 +62,19 @@ class SimpleButton(object):
             button_wanted = False
             xul_data = []
             xul_files = []
+
+            def add_xul(file_name, xul_file, button_wanted):
+                if (xul_file in files and set(
+                        self._settings.get("file_to_application")[
+                            file_name]).intersection(self._applications)):
+                    if (self._settings.get("extended_buttons")
+                            and ("extended_%s" % xul_file) in files):
+                        xul_file = "extended_%s" % xul_file
+                    xul_data.append(XulData(folder, button, xul_file, file_name))
+                    xul_files.append(os.path.join(folder, xul_file))
+                    return True
+                return button_wanted
+
             #file that belong to more then one window
             for group_name in self._app_files:
                 xul_file = group_name + ".xul"
@@ -71,25 +84,11 @@ class SimpleButton(object):
                             if exclude + ".xul" in files:
                                 break
                         else:
-                            if set(self._settings.get("file_to_application").get(file_name, ())
-                                   ).intersection(self._applications):
-                                if self._settings.get("extended_buttons") and ("extended_%s" % xul_file) in files:
-                                    xul_file = "extended_%s" % xul_file
-                                xul_data.append(XulData(folder, button,
-                                                       xul_file, file_name))
-                                xul_files.append(os.path.join(folder, xul_file))
-                                button_wanted = True
+                            button_wanted = add_xul(file_name, xul_file, button_wanted)
             #single window files
             for file_name in self._window_files:
                 xul_file = file_name + ".xul"
-                if (xul_file in files
-                        and set(self._settings.get("file_to_application")[file_name]
-                                   ).intersection(self._applications)):
-                    if self._settings.get("extended_buttons") and ("extended_%s" % xul_file) in files:
-                        xul_file = "extended_%s" % xul_file
-                    xul_data.append(XulData(folder, button, xul_file, file_name))
-                    xul_files.append(os.path.join(folder, xul_file))
-                    button_wanted = True
+                button_wanted = add_xul(file_name, xul_file, button_wanted)
 
             if "image" in files and button_wanted:
                 with open(os.path.join(folder, "image"), "r") as images:
