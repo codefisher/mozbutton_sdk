@@ -152,7 +152,8 @@ class SimpleButton(object):
 
     def string_subs(self, string):
         return (string.replace("{{pref_root}}", self._settings.get("pref_root"))
-                .replace("{{chrome_name}}", self._settings.get("chrome_name")))
+                .replace("{{chrome_name}}", self._settings.get("chrome_name"))
+                .replace("{{locale_file_prefix}}", self._settings.get("locale_file_prefix")))
 
     @staticmethod
     def format_string(string, **kwargs):

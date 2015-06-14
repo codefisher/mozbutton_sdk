@@ -28,6 +28,8 @@ Css = namedtuple('Css', ['selectors', 'declarations'])
 ImageBox = namedtuple('ImageBox', ['left', 'top', 'right', 'bottom'])
 Option = namedtuple('Option', ['firstline', 'xul'])
 OptionPanel = namedtuple('OptionPanel', ['options', 'icon', 'panel_id'])
+ChromeString = namedtuple('ChromeString', ['file_name', 'data'])
+ChromeFile = namedtuple('ChromeFile', ['file_name', 'path'])
 
 string_match = re.compile(r"StringFromName\(\"([a-zA-Z0-9.-]*?)\"")
 
@@ -59,6 +61,7 @@ class Button(SimpleButton):
         self._button_commands = defaultdict(dict)
         self.has_options = False
         self._interfaces = {}
+        self.locales_in_use = []
 
         loader = FileSystemLoader([
             os.path.join(self._settings.get('project_root'), 'files'),
@@ -260,6 +263,7 @@ class Button(SimpleButton):
         """
         For option locales to be included, the get_options() method has to be called first
         """
+        self.locales_in_use = locales_inuse
         for locale, files in button_locales.files:
             for file_name in files:
                 with codecs.open(file_name, encoding='utf-8') as fp:
@@ -280,15 +284,11 @@ class Button(SimpleButton):
 
     def get_locale_strings(self):
         locale_match = re.compile("&([a-zA-Z0-9.-]*);")
-        strings = []
+        strings = set()
         for buttons in self._button_xul.values():
             for button in buttons.values():
-                strings.extend(locale_match.findall(button))
-        pref_root = self._settings.get('pref_root')
-        if not self._settings.get('restartless'):
-            for button in self._button_keys.keys():
-                strings.extend(["%s.key.%s" % (pref_root, button), "%s.modifier.%s" % (pref_root, button)])
-        strings = list(set(strings))
+                strings.update(locale_match.findall(button))
+        strings = list(strings)
         strings.sort()
         return strings
 
@@ -349,6 +349,46 @@ class Button(SimpleButton):
     def get_defaults(self):
         return "\n".join("pref('{}', {});".format(name, value)
                          for name, value in self.get_pref_list())
+
+    def get_chrome_strings(self):
+        for name, path in self.extra_files.items():
+            with codecs.open(path, encoding='utf-8') as fp:
+                ChromeString(file_name=os.path.join("chrome", "content", "files", name),
+                         data=self.string_subs(fp.read()))
+        yield ChromeString(file_name="install.rdf", data=self.create_install())
+        yield ChromeString(file_name="chrome.manifest", data='\n'.join(self.manifest_lines()))
+
+    def get_chrome_files(self):
+        for name, path in self.resource_files.items():
+            yield ChromeFile(file_name=os.path.join("chrome", "content", "resources", name), path=path)
+        yield ChromeFile(file_name="LICENSE", path=self.find_file(self._settings.get("license", "LICENSE")))
+
+    def create_install(self):
+        template = self.env.get_template('install.rdf')
+        applications = chain.from_iterable(self._settings.get("applications_data").get(application)
+                        for application in self.get_supported_applications())
+        return template.render(
+            ext_options=self.get_options_applications(),
+            ext_applications=applications,
+            **self._settings)
+
+    def manifest_lines(self):
+        lines = []
+        chrome_name=self._settings.get("chrome_name")
+        lines.append("content\t{chrome}\tchrome/content/".format(chrome=chrome_name))
+        lines.append("skin\t{chrome}\tclassic/1.0\tchrome/skin/".format(chrome=chrome_name))
+        for option in self.get_options_applications():
+            for _, application_id, _, _ in self._settings.get("applications_data")[option]:
+                lines.append("override\tchrome://{chrome}/content/options.xul\t"
+                             "chrome://{chrome}/content/{application}"
+                             "-options.xul\tapplication={app_id}".format(chrome=chrome_name, app_id=application_id, application=option))
+        manifest = self.get_manifest()
+        if manifest:
+            lines.append(manifest.format(chrome=chrome_name))
+        for locale in self.locales_in_use:
+            lines.append("locale\t{chrome}\t{locale}"
+                         "\tchrome/locale/{locale}/".format(chrome=chrome_name, locale=locale))
+        return lines
     
     def get_icon_size(self):
         small, large = self._settings.get("icon_size")

@@ -7,7 +7,7 @@ except ImportError:
 import operator
 import itertools
 
-from builder.ext_button import Button
+from builder.ext_button import Button, ChromeString
 
 class OverlayButton(Button):
 
@@ -41,6 +41,13 @@ class OverlayButton(Button):
         for file_name, data in self.get_xul_files().items():
             yield (file_name + ".xul", data)
 
+    def get_chrome_strings(self):
+        for chrome_string in super(OverlayButton, self).get_chrome_strings():
+            yield chrome_string
+        defaults =  self.get_defaults()
+        if defaults:
+            yield ChromeString(file_name=os.path.join("defaults", "preferences", "toolbar_buttons.js"), data=defaults)
+
     def locale_files(self, button_locales, *args, **kwargs):
         dtd_data = button_locales.get_dtd_data(self.get_locale_strings(),
             self, untranslated=False)
@@ -50,6 +57,26 @@ class OverlayButton(Button):
         for locale, file_name, data in super(OverlayButton, self).locale_files(
                 button_locales, locales_inuse):
             yield locale, file_name, data
+
+    def manifest_lines(self):
+        lines = super(OverlayButton, self).manifest_lines()
+        chrome_name=self._settings.get("chrome_name")
+        lines.append("style\tchrome://global/content/customizeToolbar.xul"
+                     "\tchrome://{chrome}/skin/button.css".format(chrome=chrome_name))
+        if self.resource_files:
+            lines.append("resource\t{chrome}\tchrome://{chrome}/content/resources/".format(chrome=chrome_name))
+        for file_name in self.get_file_names():
+            for overlay in self._settings.get("files_to_overlay").get(file_name, ()):
+                lines.append("overlay\t{overlay}\t"
+                             "chrome://{chrome}/content/{file_name}.xul".format(chrome=chrome_name, file_name=file_name, overlay=overlay))
+        return lines
+
+    def get_locale_strings(self):
+        strings = super(OverlayButton, self).get_locale_strings()
+        pref_root = self._settings.get('pref_root')
+        for button in self._button_keys.keys():
+            strings.extend(["%s.key.%s" % (pref_root, button), "%s.modifier.%s" % (pref_root, button)])
+        return strings
 
     def _create_menu(self, file_name, buttons):
         if not self._settings.get('menuitems'):

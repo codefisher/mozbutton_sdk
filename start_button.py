@@ -76,7 +76,7 @@ def main():
     
     try:
         os.mkdir(os.path.join(project, button_id))
-    except:
+    except OSError:
         pass
     with open(os.path.join(project, button_id, 'image'), 'w+') as f:
         f.write(icon)
@@ -84,19 +84,20 @@ def main():
         f.write(description)
         
     with open(os.path.join(project, button_id, "strings"), 'w+') as strings:
-        strings.write("%s.label=%s\n%s.tooltip=%s" % (button_id, label, button_id, tooltip))
+        strings.write("{button_id}.label={label}\n"
+            "{button_id}.tooltip={tooltip}".format(button_id=button_id, label=label, tooltip=tooltip))
     
     for app in apps:
         if add_js:
-            with open(os.path.join(project, button_id, "%s.js" % app), 'w+') as js:
+            with open(os.path.join(project, button_id, app + ".js"), 'w+') as js:
                 js.write("""%s: function() {\n}\n""" % function)
-        with open(os.path.join(project, button_id, "%s.xul" % app), 'w+') as xul:
+        with open(os.path.join(project, button_id, app + ".xul"), 'w+') as xul:
             xul.write("""<toolbarbutton
 	class="toolbarbutton-1 chromeclass-toolbar-additional"
-	id="%s"
-	label="&%s.label;"
-	tooltiptext="&%s.tooltip;"
-	oncommand=""/>""" % (button_id, button_id, button_id))
+	id="{button_id}"
+	label="&{button_id}.label;"
+	tooltiptext="&{button_id}.tooltip;"
+	oncommand=""/>""".format(button_id=button_id))
 
 if __name__ == "__main__":
     main()

@@ -4,13 +4,13 @@ import json
 import codecs
 import lxml.etree as ET
 from copy import deepcopy
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 try:
     from PIL import Image
 except ImportError:
     pass
 
-from builder.ext_button import Button, Option
+from builder.ext_button import Button, Option, ChromeString, ChromeFile
 
 Keys = namedtuple("Keys", ['command', 'button'])
 
@@ -40,13 +40,11 @@ class RestartlessButton(Button):
 
     def jsm_keyboard_shortcuts(self, file_name):
         if not self._settings.get("use_keyboard_shortcuts"):
-            return ""
-        keys = []
+            return
         for button in self._button_keys.keys():
             func = self._button_commands.get(file_name, {}).get(button)
             if func is not None:
-                keys.append(Keys(self._patch_call(func), button))
-        return keys
+                yield Keys(self._patch_call(func), button)
 
     def option_data(self):
         scripts = []
@@ -69,7 +67,7 @@ class RestartlessButton(Button):
     def get_pref_list(self):
         settings = super(RestartlessButton, self).get_pref_list()
         pref_root = self._settings.get("pref_root")
-        if self._settings.get('restartless') and self._settings.get('use_keyboard_shortcuts'):
+        if self._settings.get('use_keyboard_shortcuts'):
             for button in self._button_keys.keys():
                 settings.append(("{}key-disabled.{}".format(pref_root, button), 'false'))
                 properties = self.pref_locale_file("'chrome://{chrome_name}/locale/{prefex}keys.properties'")
@@ -84,6 +82,47 @@ class RestartlessButton(Button):
                 js_files["key-option"] = self.string_subs(key_option_fp.read())
         self._included_js_files = js_files.keys()
         return js_files
+
+    def get_chrome_strings(self):
+        for chrome_string in super(RestartlessButton, self).get_chrome_strings():
+            yield chrome_string
+        yield ChromeString(file_name='bootstrap.js', data=self.create_bootstrap())
+        defaults =  self.get_defaults()
+        if defaults:
+            yield ChromeString(file_name=os.path.join("chrome", "content", "defaultprefs.js"), data=defaults)
+
+    def get_chrome_files(self):
+        for chrome_file in super(RestartlessButton, self).get_chrome_files():
+            yield chrome_file
+        yield ChromeFile(file_name=os.path.join("chrome", "content", "customizable.jsm"), path=self.find_file('customizable.jsm'))
+
+    def create_bootstrap(self):
+        chrome_name = self._settings.get("chrome_name")
+        loaders = []
+        resource = ""
+        if self.resource_files:
+            resource = "createResource('%s', 'chrome://%s/content/resources/');" % (chrome_name, chrome_name)
+        install = ""
+        window_modules = defaultdict(list)
+        for file_name in self.get_file_names():
+            for overlay in self._settings.get("files_to_window").get(file_name, ()):
+                window_modules[overlay].append(file_name)
+
+        for overlay, modules in window_modules.items():
+                mods = "\n\t\t".join(["modules.push('chrome://%s/content/%s.jsm');" % (chrome_name, file_name) for file_name in modules])
+                loaders.append("(uri == '%s') {\n\t\t%s\n\t}" % (overlay, mods))
+        with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "bootstrap.js") ,"r") as f:
+            template = f.read()
+        if self._settings.get("show_updated_prompt"):
+            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "install.js") ,"r") as f:
+                install = (f.read().replace("{{homepage_url}}", self._settings.get("homepage"))
+                                   .replace("{{version}}", self._settings.get("version"))
+                                   .replace("{{pref_root}}", self._settings.get("pref_root"))
+                                   .replace("{{current_version_pref}}", self._settings.get("current_version_pref")))
+        return (template.replace("{{chrome_name}}", self._settings.get("chrome_name"))
+                        .replace("{{resource}}", resource)
+                        .replace("{{install}}", install)
+                        .replace("{{loaders}}", "if" + " else if".join(loaders)))
 
     def _jsm_create_menu(self, file_name, buttons):
         if not self._settings.get('menuitems'):
