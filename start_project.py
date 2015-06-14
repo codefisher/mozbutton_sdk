@@ -13,7 +13,7 @@ def main():
     if len(sys.argv) > 1:
         path = sys.argv[1]
     else:
-        print("Please give the location of where you want to start the probject")
+        print("Please give the location of where you want to start the project.")
         exit()
     create_folder(path)
     create_folder(os.path.join(path, "buttons"))
@@ -35,14 +35,14 @@ def main():
     simple_name = re.sub(r"[^a-zA-Z]+", '_', name).lower()
     ext_info["name"] = name
     ext_info["chrome_name"] = simple_name
-    ext_info["pref_root"] = "extensions.%s." % simple_name
+    ext_info["pref_root"] = "extensions.{}.".format(simple_name)
     ext_id = raw_input("Extension ID (leave blank to have one generated): ")
     if ext_id:
         ext_info["extension_id"] = ext_id
     else:
         m = hashlib.md5()
         m.update(name)
-        ext_info["extension_id"] = "{%s}" % m.hexdigest()
+        ext_info["extension_id"] = "{" + m.hexdigest() + "}"
 
     ext_info["creator"] = raw_input("Extension Creator: ")
     ext_info["description"] = raw_input("Extension Description: ")
@@ -68,7 +68,7 @@ def main():
 
     #TODO: ask for path of icon file, and copy to files/icon.png
 
-    with open(os.path.join(path, "%s.json" % simple_name), 'w+') as fp:
+    with open(os.path.join(path, simple_name + ".json"), 'w+') as fp:
         json.dump(ext_info, fp, indent=4, separators=(',', ': '))
     print("Done!")
 

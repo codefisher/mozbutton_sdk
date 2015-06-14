@@ -58,9 +58,9 @@ def main():
     if "--lookup-max-versions" in opts_table or "-v" in opts_table:
         apply_max_version(config)
     if "--git-revision" in opts_table:
-        config["version"] = "%s.r%s" %(config["version"], get_git_revision(config))
+        config["version"] = "{}.r{}".format(config["version"], get_git_revision(config))
     if "--svn-revision" in opts_table:
-        config["version"] = "%s.r%s" %(config["version"], get_svn_revision(config))
+        config["version"] = "{}.r{}".format(config["version"], get_svn_revision(config))
     if "--update-rdf" in opts_table:
         with open(os.path.join(config.get("project_root"), config.get("output_folder"), opts_table["--update-rdf"]), "w") as rdf_fp:
             rdf_fp.write(create_update_rdf(config))

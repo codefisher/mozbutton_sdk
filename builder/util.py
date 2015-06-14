@@ -2,9 +2,10 @@ import os
 import json
 import codecs
 import itertools
+from jinja2 import FileSystemLoader, Environment
 
 try:
-    basestring # problem in Py3
+    basestring  # problem in Py3
 except NameError:
     basestring = str
 
@@ -27,9 +28,9 @@ def apply_settings_files(settings, file_names):
                 try:
                     settings.update(json.load(fp))
                 except ValueError:
-                    raise ValueError("Failed to parse settings file: %s" % file_name)
+                    raise ValueError("Failed to parse settings file: " + file_name)
         except IOError:
-            raise IOError("Failed to open settings file: %s" % file_name)
+            raise IOError("Failed to open settings file: " + file_name)
 
 def get_svn_revision(settings):
     repo = svn.local.LocalClient(settings.get("project_root"))
@@ -51,7 +52,7 @@ def get_pref_folders(limit, settings, data_folder="options"):
 def get_folders(limit, settings, folder):
     """Gets all the folders inside another and applies some filtering to it
 
-    filter maybe the value "all" or a comer seperated list of values
+    filter maybe the value "all" or a comer separated list of values
 
     get_folders(str, str) -> list<str>
     """
@@ -84,38 +85,17 @@ def extra_update_prams():
         "update_type": "%UPDATE_TYPE%",
         "compatibility_mode": "%COMPATIBILITY_MODE%",
     }
-    return "&".join("%s=%s" % (key, value) for key, value in app_data.items())
+    return "&".join("{}={}".format(key, value) for key, value in app_data.items())
 
 def create_update_rdf(config):
-    xml = """<?xml version="1.0"?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-    xmlns:em="http://www.mozilla.org/2004/em-rdf#">
-    <rdf:Description
-        rdf:about="urn:mozilla:extension:%s">
-        <em:updates>
-            <rdf:Seq>
-                <rdf:li>
-                    <rdf:Description>
-                        <em:version>%s</em:version>
-                        %s
-                    </rdf:Description>
-                </rdf:li>
-            </rdf:Seq>
-        </em:updates>
-    </rdf:Description>
-    </rdf:RDF>"""
-    
-    update_xml = """<!--  %%s -->
-                        <em:targetApplication>
-                            <rdf:Description>
-                                <em:id>%%s</em:id>
-                                <em:minVersion>%%s</em:minVersion>
-                                <em:maxVersion>%%s</em:maxVersion>
-                                <em:updateLink>%s</em:updateLink>
-                            </rdf:Description>
-                        </em:targetApplication>""" % config.get("update_file")
-                        
-    updates = []
-    for data in itertools.chain.from_iterable(config.get("applications_data").values()):
-        updates.append(update_xml % tuple(data))
-    return xml % (config.get("extension_id"), config.get("version"), "\n".join(updates))
+    loader = FileSystemLoader([
+            os.path.join(config.get('project_root'), 'files'),
+            os.path.join(config.get('button_sdk_root'), 'templates')])
+    env = Environment(loader=loader)
+    template = env.get_template('update.rdf')
+    ext_applications = itertools.chain.from_iterable(config.get("applications_data").values())
+    return template.render(
+        version=config.get("version"),
+        extension_id=config.get("extension_id"),
+        ext_applications=ext_applications,
+        update_url=config.get("update_file"))

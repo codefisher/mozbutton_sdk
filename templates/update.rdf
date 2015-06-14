@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+	<rdf:Description
+		rdf:about="urn:mozilla:extension:{{ extension_id }}">
+		<em:updates>
+			<rdf:Seq>
+				<rdf:li>
+					<rdf:Description>
+						<em:version>{{ version }}</em:version>
+						{%- for app_name, app_id, min_version, max_version in ext_applications %}
+						<!--  {{ app_name }} -->
+						<em:targetApplication>
+							<rdf:Description>
+								<em:id>{{ app_id }}</em:id>
+								<em:minVersion>{{ min_version }}</em:minVersion>
+								<em:maxVersion>{{ max_version }}</em:maxVersion>
+								<em:updateLink>{{ update_url }}</em:updateLink>
+							</rdf:Description>
+						</em:targetApplication>
+						{% endfor }}
+					</rdf:Description>
+				</rdf:li>
+			</rdf:Seq>
+		</em:updates>
+	</rdf:Description>
+</rdf:RDF>
