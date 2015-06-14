@@ -455,9 +455,7 @@ class Button(SimpleButton):
         return icon_sizes, image_datas, css_data, result_images
 
     def create_grayscale(self, icon_size_set, image):
-        name = list(image[1:].rpartition('.'))
-        name.insert(1, "-disabled")
-        new_image = "".join(name)
+        new_image = image[1:].replace('.', '-disabled.', 1)
         opacity = 1.0 if image[0] == "-" else 0.9
         data = {}
         try:
@@ -490,7 +488,6 @@ class Button(SimpleButton):
             image_map_x[size] = x
             image_map_size[size] = Image.new("RGBA", (x * int(size), y * int(size)), (0, 0, 0, 0))
         count = 0
-        offset = 0
 
         def merge_image(count, func, image):
             image_map[image] = count
@@ -498,33 +495,32 @@ class Button(SimpleButton):
                 # TODO: need to also check if this icon will never be needed
                 # if modifier and (modifier[0] == ' ' or modifier[0] == '$') and size != '16':
                 # continue
-                image_map_size[size].paste(func(image, size), self._box_cmp(image_map_x[size], count, size))
-            return count + 1, count
+                image_map_size[size].paste(
+                    func(image, size),
+                    self._box_cmp(image_map_x[size], count, size))
+
         for button, image_data in self._button_image.items():
             for image, modifier in image_data:
-                if image[0] == "*" or image[0] == "-":
-                    data, image = self.create_grayscale(icon_size_set, image)
-                    if data is None:
-                        continue
-
-                    def gray_image(image, size):
-                        return Image.open(io.BytesIO(data[size]))
-                    if image_map.get(image) is not None:
-                        offset = image_map.get(image)
-                    else:
-                        count, offset = merge_image(count, gray_image, image)
+                index = image_map.get(image)
+                if index is not None:
+                    offset = index
                 else:
-                    if image_map.get(image) is not None:
-                        offset = image_map.get(image)
+                    if image[0] == "*" or image[0] == "-":
+                        data, image = self.create_grayscale(icon_size_set, image)
+                        if data is None:
+                            continue
+
+                        def gray_image(image, size):
+                            return Image.open(io.BytesIO(data[size]))
+                        merge_image(count, gray_image, image)
                     else:
                         def create_image(image, size):
-                            return Image.open(get_image(self._settings, size, image))
-                        try:
-                            count, offset = merge_image(count, create_image, image)
-                        except IOError:
-                            print("image %s does not exist" % image)
-                        except ValueError:
-                            print("count not use image: %s" % image)
+                            try:
+                                return Image.open(get_image(self._settings, size, image))
+                            except IOError:
+                                print("image %s does not exist" % image)
+                        merge_image(count, create_image, image)
+                    count, offset = count + 1, count
                 selectors = self._get_selectors(button, group_menu_name, icon_size_set, icon_sizes, modifier)
                 for size in (size for size in icon_size_set if len(selectors[size])):
                     image_box = self._box_cmp(image_map_x[size], offset, size)
