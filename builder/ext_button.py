@@ -123,7 +123,7 @@ class Button(SimpleButton):
                     if file_name[0] != ".":
                         self.resource_files[file_name] = os.path.join(folder, "res", file_name)
             for file_name, obj in (
-                    ('res_list', self.resource_files), 'file_list', self.extra_files):
+                    ('res_list', self.resource_files), ('file_list', self.extra_files)):
                 if file_name in files:
                     with open(os.path.join(folder, file_name), "r") as res_list:
                         for file_name in (file_name.strip()
