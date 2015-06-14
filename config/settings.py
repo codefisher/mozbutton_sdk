@@ -240,9 +240,17 @@ config = {
         },
         "file": {
             "browser": ("menu_FilePopup", "goOfflineMenuitem"),
+            "mail": ("menu_FilePopup", "menu_FileQuitSeparator"),
+            "compose": ("menu_FilePopup", "menu_FileCloseSeparator"),
+            "read": ("menu_FilePopup", "menu_FileQuitSeparator"),
+            "suite_browser": ("menu_FilePopup", "menu_FileQuitSeparator"),
         },
         "toolbar": {
             "browser": ("toolbar-context-menu","viewToolbarsMenuSeparator"),
+            "mail": ("toolbar-context-menu","customizeMailToolbarMenuSeparator"),
+            "compose": ("toolbar-context-menu","customizeMailToolbarMenuSeparator"),
+            "read": ("toolbar-context-menu","customizeMailToolbarMenuSeparator"),
+            "suite_browser": ("toolbar-context-menu","toolbar-customize-sep"),
         }
     },
     "file_exclude": {
