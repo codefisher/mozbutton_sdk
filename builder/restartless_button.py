@@ -10,7 +10,7 @@ try:
 except ImportError:
     pass
 
-from builder.ext_button import Button
+from builder.ext_button import Button, Option
 
 Keys = namedtuple("Keys", ['command', 'button'])
 
@@ -48,11 +48,40 @@ class RestartlessButton(Button):
                 keys.append(Keys(self._patch_call(func), button))
         return keys
 
+    def option_data(self):
+        scripts = []
+        if self._settings.get("use_keyboard_shortcuts"):
+            scripts.append("key-option.js")
+            with open(self.find_file("key-option.xul"), "r") as key_option_file:
+                key_option_template = key_option_file.read()
+            for button in self._button_keys.keys():
+                xul = self.format_string(key_option_template,
+                                         button=button,
+                                         menu_label=button + ".label")
+                applications = " ".join(self._button_applications[button])
+                self._button_options[button + "-key-item"].append(
+                    Option("tb-key-shortcut.option.title:lightning.png:" + applications, xul))
+                self._button_applications[
+                    button + "-key-item"] = self._button_applications[button]
+        files, javascript = super(RestartlessButton, self).option_data()
+        return files, javascript + scripts
+
+    def get_pref_list(self):
+        settings = super(RestartlessButton, self).get_pref_list()
+        pref_root = self._settings.get("pref_root")
+        if self._settings.get('restartless') and self._settings.get('use_keyboard_shortcuts'):
+            for button in self._button_keys.keys():
+                settings.append(("{}key-disabled.{}".format(pref_root, button), 'false'))
+                properties = self.pref_locale_file("'chrome://{chrome_name}/locale/{prefex}keys.properties'")
+                settings.append(("{}key.{}".format(pref_root, button), properties))
+                settings.append(("{}modifier.{}".format(pref_root, button), properties))
+        return settings
+
     def get_js_files(self):
         js_files = super(RestartlessButton, self).get_js_files()
         if self._settings.get("use_keyboard_shortcuts"):
-            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "key-option.js")) as key_option_fp:
-                js_files["key-option"] = key_option_fp.read()
+            with open(self.find_file("key-option.js")) as key_option_fp:
+                js_files["key-option"] = self.string_subs(key_option_fp.read())
         self._included_js_files = js_files.keys()
         return js_files
 
@@ -67,8 +96,7 @@ class RestartlessButton(Button):
         num = 0
         meta = self._settings.get("file_to_menu").get(location, {}).get(file_name)
         if in_submenu and meta:
-            with codecs.open(os.path.join(self._settings.get('button_sdk_root'),
-                                          'templates', 'menu.js'), encoding='utf-8') as template_file:
+            with codecs.open(self.find_file("menu.js"), encoding='utf-8') as template_file:
                 template = template_file.read()
             menu_name, insert_after = meta
             statements.append(template % {

@@ -144,6 +144,22 @@ class SimpleButton(object):
     def __contains__(self, item):
         return item in self._buttons
 
+    def find_file(self, file_name):
+        path = os.path.join(self._settings.get('project_root'), "files", file_name)
+        if os.path.isfile(path):
+            return path
+        return os.path.join(self._settings.get('button_sdk_root'), "templates", file_name)
+
+    def string_subs(self, string):
+        return (string.replace("{{pref_root}}", self._settings.get("pref_root"))
+                .replace("{{chrome_name}}", self._settings.get("chrome_name")))
+
+    @staticmethod
+    def format_string(string, **kwargs):
+        for key, item in kwargs.items():
+            string = string.replace('{{' + key + '}}', item)
+        return string
+
     def _process_xul_file(self, folder, button, xul_file, file_name):
         application = self._settings.get("file_to_application")[file_name]
         self._button_windows[button].append(file_name)

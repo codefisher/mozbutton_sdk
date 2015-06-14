@@ -9,6 +9,25 @@
 <prefwindow id="tbutton-options"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
 	persist="screenX screenY" title="&options.window.title;" >
-	{{options}}
-	{{javascript}}
+	{%- for title, panel in panels %}
+	<prefpane id="prefpane-{{panel.panel_id}}"
+			  image="chrome://{{chrome_name}}/skin/option/{{panel.icon}}"
+			  label="&{{title}};" style="max-height:400px;" flex="1">
+		<vbox flex="1" style="overflow:auto;">
+			{%- for option in panel.options %}
+				{{ option }}
+			{%- endfor %}
+		</vbox>
+	</prefpane>
+	{%- endfor %}
+	{%- for file_name in javascript %}
+		<script type="application/x-javascript" src="chrome://{{chrome_name}}/content/{{file_name}}"/>
+	{%- endfor %}
+	<script type="application/x-javascript"><![CDATA[
+		window.addEventListener('load', function() {
+			if(window.arguments && window.arguments.length) {
+				window.document.documentElement.showPane(document.getElementById(window.arguments[0]));
+			}
+		}, false);
+	]]></script>
 </prefwindow>

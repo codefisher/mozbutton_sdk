@@ -55,6 +55,7 @@ config = {
     # if a menu should be added with all the buttons that can be changed into menu items
     "menuitems": (),
     "menu_meta": None,
+    "menuitems_options": True,
     "default_show_menu_pref": "true",
     # where the menu should be placed
     # it it is None, all buttons will be placed in a submenu

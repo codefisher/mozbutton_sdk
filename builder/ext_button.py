@@ -26,6 +26,8 @@ except NameError:
 Menuitem = namedtuple('Menuitem', ['node', 'parent_id', 'insert_after'])
 Css = namedtuple('Css', ['selectors', 'declarations'])
 ImageBox = namedtuple('ImageBox', ['left', 'top', 'right', 'bottom'])
+Option = namedtuple('Option', ['firstline', 'xul'])
+OptionPanel = namedtuple('OptionPanel', ['options', 'icon', 'panel_id'])
 
 string_match = re.compile(r"StringFromName\(\"([a-zA-Z0-9.-]*?)\"")
 
@@ -41,9 +43,8 @@ class Button(SimpleButton):
         self._button_js = defaultdict(dict)
         self._properties_strings = set()
         self._preferences = {}
-        self._button_options = {}
+        self._button_options = defaultdict(list)
         self._button_options_js = {}
-        self._application_button_options = defaultdict(dict)
         self._option_applications = set()
         self._has_javascript = False
         self._manifest = []
@@ -96,18 +97,12 @@ class Button(SimpleButton):
             if "manifest" in files:
                 with open(os.path.join(folder, "manifest"), "r") as manifest:
                     self._manifest.append(manifest.read())
-            if "option.xul" in files:
-                with open(os.path.join(folder, "option.xul"), "r") as option:
-                    self._button_options[button] = (option.readline(), option.read())
-            if self._settings.get("extra_options") and "extended_option.xul" in files:
-                with open(os.path.join(folder, "extended_option.xul"), "r") as option:
-                    self._button_options[button] = (option.readline(), option.read())
             for file_name in files:
-                if file_name.endswith('_option.xul'):
-                    application = file_name[0:-11]
-                    if application in self._settings.get("applications_data"):
-                        with open(os.path.join(folder, file_name), "r") as option:
-                            self._application_button_options[button][application] = (option.readline(), option.read())
+                if file_name.endswith('option.xul'):
+                    if file_name.startswith('extended') and not self._settings.get("extra_options"):
+                        continue
+                    with open(os.path.join(folder, file_name), "r") as option:
+                        self._button_options[button].append(Option(option.readline(), option.read()))
             if "option.js" in files:
                 with open(os.path.join(folder, "option.js"), "r") as option:
                     self._button_options_js[button] = option.read()
@@ -128,7 +123,7 @@ class Button(SimpleButton):
                     with open(os.path.join(folder, file_name), "r") as res_list:
                         for file_name in (file_name.strip()
                                 for file_name in res_list if file_name.strip()):
-                            obj[file_name] = os.path.join(self._settings.get("project_root"), "files", file_name)
+                            obj[file_name] = self.find_file(file_name)
             if "style.css" in files:
                 with open(os.path.join(folder, "style.css"), "r") as style:
                     self._button_style[button] = style.read()
@@ -156,93 +151,83 @@ class Button(SimpleButton):
     def get_manifest(self):
         return "\n".join(self._manifest)
 
-    def get_options(self):
-        result = {}
-        if self._button_options_js:
-            javascript = ("""<script type="application/x-javascript" src="chrome://%s/content/loader.js"/>\n"""
-                          """<script type="application/x-javascript" src="chrome://%s/content/button.js"/>\n"""
-                          """<script type="application/x-javascript" src="chrome://%s/content/option.js"/>\n"""
-                          % (self._settings.get("chrome_name"), self._settings.get("chrome_name"),
-                             self._settings.get("chrome_name")))
+    def append_option(self, files, apps, first, data):
+        meta = first.strip().split(':')
+        if len(meta) == 2:
+            title, icon = meta
         else:
-            javascript = ""
-        if self._settings.get("restartless") and self._settings.get("use_keyboard_shortcuts"):
-            javascript += """<script type="application/x-javascript" src="chrome://%s/content/key-option.js"/>\n""" % self._settings.get("chrome_name")
-            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "key-option.xul"), "r") as key_option_file:
-                key_option_template = key_option_file.read()
-            for button in self._button_keys.keys():
-                self._button_options["%s-key-item" % button] = ("tb-key-shortcut.option.title:lightning.png",
-                            key_option_template.replace("{{button}}", button).replace("{{menu_label}}", "%s.label" % button))
-                self._button_applications["%s-key-item" % button] = self._applications
-        with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "option.xul"), "r") as overlay_window_file:
-            overlay_window = (overlay_window_file.read()
-                       .replace("{{chrome_name}}", self._settings.get("chrome_name"))
-                       .replace("{{locale_file_prefix}}", self._settings.get("locale_file_prefix"))
-                       .replace("{{javascript}}", javascript))
-        if self._settings.get("menuitems"):
-            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "show-menu-option.xul"), "r") as menu_option_file:
+            title, icon, appslist = meta
+            apps = apps.intersection(appslist.split())
+        self._option_icons.add(icon)
+        self._option_titles.add(title)
+        for app in apps:
+            self._option_applications.add(app)
+            if title in files[app]:
+                files[app][title].options.append(data)
+            else:
+                files[app][title] = OptionPanel(
+                    options=[data], icon=icon,
+                    panel_id=title.replace('.', '-'))
+
+    def option_data(self):
+        javascript = []
+        if self._button_options_js:
+            javascript = ["loader.js", "button.js", "option.js"]
+        if self._settings.get("menuitems") and self._settings.get("menuitems_options"):
+            with open(self.find_file("show-menu-option.xul"),
+                      "r") as menu_option_file:
                 menu_option_template = menu_option_file.read()
-            if self._settings.get("menu_placement") is None and self._settings.get("menu_meta"):
+            if self._settings.get(
+                    "menu_placement") is None and self._settings.get(
+                    "menu_meta"):
                 menu_id, menu_label, location = self._settings.get("menu_meta")
-                self._button_options[menu_id] = ("tb-show-a-menu.option.title:menu.png", 
-                        menu_option_template.replace("{{menu_id}}", menu_id).replace("{{menu_label}}", menu_label))
+                xul = self.format_string(menu_option_template,
+                                         menu_id=menu_id, menu_label=menu_label)
+                # TODO: add filter for the application where the menu would be
+                self._button_options[menu_id].append(
+                    Option("tb-show-a-menu.option.title:menu.png", xul))
                 self._button_applications[menu_id] = self._applications
             else:
                 menu_placement = self._settings.get("menu_placement")
                 for button in self._buttons:
-                    if button in self._settings.get("menuitems") or (type(menu_placement) == dict and button in menu_placement):
-                        self._button_options["%s-menu-item" % button] = ("tb-show-a-menu.option.title:menu.png",
-                            menu_option_template.replace("{{menu_id}}", "%s-menu-item" % button).replace("{{menu_label}}", "%s.label" % button))
-                        self._button_applications["%s-menu-item" % button] = self._applications
+                    if button in self._settings.get("menuitems") or (type(
+                            menu_placement) == dict and button in menu_placement):
+                        xul = self.format_string(menu_option_template,
+                                                 menu_id=button + "-menu-item",
+                                                 menu_label=button + ".label")
+                        self._button_options[button + "-menu-item"].append(
+                            Option("tb-show-a-menu.option.title:menu.png", xul))
+                        self._button_applications[
+                            "%s-menu-item" % button] = self._applications
         files = defaultdict(dict)
-
-        def append(app, first, data):
-            meta = first.strip().split(':')
-            if len(meta) == 2:
-                title, icon = meta
-            else:
-                title, icon, appslist = meta
-                if app not in appslist.split():
-                    return
-            if title in files[app]:
-                files[app][title]['data'].append(data)
-            else:
-                files[app][title] = {'data': [data], 'icon': icon}
-        for button, (first, data) in self._button_options.items():
-            for application in self._button_applications[button]:
-                self._option_applications.add(application)
-                append(application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
-        for button, items in self._application_button_options.items():
-            for application, (first, data) in items.items():
-                append(application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
+        for button, options in self._button_options.items():
+            for first, data in options:
+                self.append_option(files, self._button_applications[button],
+                                   first, self.string_subs(data))
         if self._pref_list:
-            limit = ".xul,".join(self._pref_list.keys()) + ".xul"
+            limit = [name + '.xul' for name in self._pref_list.keys()]
             pref_files = get_pref_folders(limit, self._settings)
             for file_name, name in zip(*pref_files):
-                data_fp = open(file_name, "r")
-                first = data_fp.readline()
-                data = data_fp.read()
-                data_fp.close()
+                with open(file_name, "r") as data_fp:
+                    option = Option(data_fp.readline(), data_fp.read())
                 applications = set()
                 for button in self._pref_list[name[:-4]]:
-                    for application in self._button_applications[button]:
-                        self._option_applications.add(application)
-                        applications.add(application)
-                    self._button_options[file_name] = (first, data)
-                for application in applications:
-                    append(application, first, data.replace("{{pref_root}}", self._settings.get("pref_root")))
-        for application, data in files.items():
-            button_pref = []
-            for panel, info in data.items():
-                icon = info['icon']
-                self._option_icons.add(icon)
-                self._option_titles.add(panel)
-                data = "\n\t\t\t\t".join("\n".join(info['data']).split("\n"))
-                panel_xml = """\t\t\t<prefpane id="prefpane-%s" image="chrome://%s/skin/option/%s" label="&%s;" style="max-height:400px;" flex="1"><vbox flex="1" style="overflow:auto;">%s</vbox></prefpane>"""  % (
-                                    panel.replace('.', '-'), self._settings.get("chrome_name"), icon, panel, data)
-                button_pref.append(panel_xml)
-            result["%s-options" % application] = overlay_window.replace("{{options}}",
-                                    "\n".join(button_pref))
+                    applications.update(self._button_applications[button])
+                    self._button_options[file_name].append(option)
+                self.append_option(files, applications, option.firstline,
+                                   self.string_subs(option.xul))
+        return files, javascript
+
+    def get_options(self):
+        files, javascript = self.option_data()
+        template = self.env.get_template('option.xul')
+        result = {}
+        for application, panels in files.items():
+            result[application + "-options"] = template.render(
+                panels=panels.items(), javascript=javascript,
+                chrome_name=self._settings.get("chrome_name"),
+                locale_file_prefix=self._settings.get("locale_file_prefix")
+            )
         self.has_options = bool(result)
         return result
 
@@ -333,38 +318,37 @@ class Button(SimpleButton):
         locale_match = re.compile("&([a-zA-Z0-9.-]*);")
         strings = list(self._option_titles)
         strings.append("options.window.title")
-        for first, value in self._button_options.values():
-            strings.extend(locale_match.findall(value))
-        for first, value in chain.from_iterable(item.values() for item in self._application_button_options.values()):
-            strings.extend(locale_match.findall(value))
+        for options in self._button_options.values():
+            for option in options:
+                strings.extend(locale_match.findall(option.xul))
         return list(set(strings))
 
-    def get_defaults(self):
+    def pref_locale_file(self, string):
+        return string.format(chrome_name=self._settings.get("chrome_name"),
+                       prefex=self._settings.get("locale_file_prefix"))
+
+    def get_pref_list(self):
         settings = []
         pref_root = self._settings.get("pref_root")
-        chrome_name = self._settings.get("chrome_name")
         if self._settings.get("translate_description"):
-            settings.append(("extensions.%s.description" % self._settings.get("extension_id"), 
-                         """'chrome://%s/locale/%sbutton.properties'""" % (chrome_name, self._settings.get("locale_file_prefix"))))
-        if self._settings.get('restartless') and self._settings.get('use_keyboard_shortcuts'):
-            for button in self._button_keys.keys():
-                settings.append(("%skey-disabled.%s" % (pref_root, button), 'false'))
-                settings.append(("%skey.%s" % (pref_root, button),
-                         """'chrome://%s/locale/%skeys.properties'""" % (chrome_name, self._settings.get("locale_file_prefix"))))
-                settings.append(("%smodifier.%s" % (pref_root, button),
-                         """'chrome://%s/locale/%skeys.properties'""" % (chrome_name, self._settings.get("locale_file_prefix"))))
+            settings.append(("extensions.{}.description".format(self._settings.get("extension_id")),
+                         self.pref_locale_file("'chrome://{chrome_name}/locale/{prefex}button.properties'")))
         if self._settings.get("show_updated_prompt") or self._settings.get("add_to_main_toolbar"):
-            settings.append(("%s%s" % (pref_root, self._settings.get("current_version_pref")), "''"))
+            settings.append((pref_root + self._settings.get("current_version_pref"), "''"))
         if self._settings.get("menuitems"):
             if self._settings.get("menu_placement") is None and self._settings.get("menu_meta"):
                 menu_id, menu_label, location = self._settings.get("menu_meta")
-                settings.append(("%sshowamenu.%s" % (pref_root, menu_id), self._settings.get("default_show_menu_pref")))
+                settings.append(("{}showamenu.{}".format(pref_root, menu_id), self._settings.get("default_show_menu_pref")))
             else:
                 for button in self._buttons:
-                    settings.append(("%sshowamenu.%s-menu-item" % (pref_root, button), self._settings.get("default_show_menu_pref")))
+                    settings.append(("{}showamenu.{}-menu-item".format(pref_root, button), self._settings.get("default_show_menu_pref")))
         for name, value in self._preferences.items():
-            settings.append(("%s%s" % (pref_root, name), value))
-        return "\n".join("pref('%s', %s);" % setting for setting in settings)
+            settings.append((pref_root + name, value))
+        return settings
+
+    def get_defaults(self):
+        return "\n".join("pref('{}', {});".format(name, value)
+                         for name, value in self.get_pref_list())
     
     def get_icon_size(self):
         small, large = self._settings.get("icon_size")
@@ -639,11 +623,12 @@ class Button(SimpleButton):
                         js_files[file_name] = end
         if self._button_options_js:
             extra_javascript = []
-            for button, (first, data) in self._button_options.items():
-                js_options_include.update(detect_dependency.findall(data))
+            for options in self._button_options.values():
+                for option in options:
+                    js_options_include.update(detect_dependency.findall(option.xul))
             for button, value in self._button_options_js.items():
                 # TODO: dependency resolution is not enabled here yet
-                js_options_include.update(detect_dependency.findall(self._button_options[button][1]))
+                js_options_include.update(detect_dependency.findall(value))
                 js_functions = function_match.findall(value)
                 self._button_options_js[button] = ",\n".join(js_functions)
                 extra_javascript.append(multi_line_replace.sub("\n",
