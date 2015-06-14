@@ -172,11 +172,9 @@ class Button(SimpleButton):
                     options=[data], icon=icon,
                     panel_id=title.replace('.', '-'))
 
-    def option_data(self):
-        javascript = []
-        if self._button_options_js:
-            javascript = ["loader.js", "button.js", "option.js"]
-        if self._settings.get("menuitems") and self._settings.get("menuitems_options"):
+    def create_menu_options(self):
+        if self._settings.get("menuitems") and self._settings.get(
+                "menuitems_options"):
             with open(self.find_file("show-menu-option.xul"),
                       "r") as menu_option_file:
                 menu_option_template = menu_option_file.read()
@@ -202,6 +200,12 @@ class Button(SimpleButton):
                             Option("tb-show-a-menu.option.title:menu.png", xul))
                         self._button_applications[
                             "%s-menu-item" % button] = self._applications
+
+    def option_data(self):
+        javascript = []
+        if self._button_options_js:
+            javascript = ["loader.js", "button.js", "option.js"]
+        self.create_menu_options()
         files = defaultdict(dict)
         for button, options in self._button_options.items():
             for first, data in options:
