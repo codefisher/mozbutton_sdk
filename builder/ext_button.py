@@ -444,10 +444,16 @@ class Button(SimpleButton):
         return selectors
 
     @staticmethod
-    def _box_cmp(x, offset, size):
+    def _box_cmp(map_x, offset, size):
+        x = map_x[size]
         y_offset = offset // x
         x_offset = offset % x
-        return ImageBox(x_offset * int(size), y_offset * int(size), (x_offset + 1) * int(size), (y_offset + 1) * int(size))
+        return ImageBox(
+            left=x_offset * int(size),
+            top=y_offset * int(size),
+            right=(x_offset + 1) * int(size),
+            bottom=(y_offset + 1) * int(size)
+        )
 
     def _css_setup(self):
         icon_sizes = self.get_icon_size()
@@ -514,11 +520,15 @@ class Button(SimpleButton):
         image_map_size = {}
         image_map_x = {}
         for size in icon_size_set:
-            y, x = int(math.ceil(image_count * int(size) / 1000.0)), (1000 // int(size))
+            y = int(math.ceil(image_count * int(size) / 1000.0))
+            x = 1000 // int(size)
             if y == 1:
                 x = image_count
             image_map_x[size] = x
-            image_map_size[size] = Image.new("RGBA", (x * int(size), y * int(size)), (0, 0, 0, 0))
+            image_map_size[size] = Image.new(
+                mode="RGBA",
+                size=(x * int(size), y * int(size)),
+                color=(0, 0, 0, 0))
         count = 0
 
         def merge_image(count, func, image):
@@ -529,8 +539,10 @@ class Button(SimpleButton):
                 # continue
                 image_map_size[size].paste(
                     func(image, size),
-                    self._box_cmp(image_map_x[size], count, size))
+                    self._box_cmp(image_map_x, count, size))
 
+        list_style_image = """list-style-image:url("chrome://{chrome_name}/skin/{size}/button.png");"""
+        moz_image_region = """-moz-image-region: rect({top}px {right}px {bottom}px {left}px)"""
         for button, image_data in self._button_image.items():
             for image, modifier in image_data:
                 index = image_map.get(image)
@@ -553,21 +565,25 @@ class Button(SimpleButton):
                                 print("image %s does not exist" % image)
                         merge_image(count, create_image, image)
                     count, offset = count + 1, count
-                selectors = self._get_selectors(button, group_menu_name, icon_size_set, icon_sizes, modifier)
-                for size in (size for size in icon_size_set if len(selectors[size])):
-                    image_box = self._box_cmp(image_map_x[size], offset, size)
-                    declarations = [
-                        """list-style-image:url("chrome://{chrome_name}/skin/{size}/button.png");""".format(chrome_name=chrome_name, size=size),
-                        """-moz-image-region: rect({top}px {right}px {bottom}px {left}px)""".format(**image_box._asdict())
-                    ]
-                    css_data.append(Css(
-                        selectors=",\n".join(selectors[size]),
-                        declarations=declarations))
+                selectors = self._get_selectors(
+                    button, group_menu_name, icon_size_set,
+                    icon_sizes, modifier)
+                for size in icon_size_set:
+                    if len(selectors[size]):
+                        image_box = self._box_cmp(image_map_x, offset, size)
+                        declarations = [
+                            list_style_image.format(
+                                chrome_name=chrome_name, size=size),
+                            moz_image_region.format(**image_box._asdict())
+                        ]
+                        css_data.append(Css(
+                            selectors=",\n".join(selectors[size]),
+                            declarations=declarations))
         for size in icon_size_set:
-            size_io = io.BytesIO()
-            image_map_size[size].save(size_io, "png")
-            image_datas[os.path.join("skin", size, "button.png")] = size_io.getvalue()
-            size_io.close()
+            with io.BytesIO() as size_io:
+                image_map_size[size].save(size_io, "png")
+                path = os.path.join("skin", size, "button.png")
+                image_datas[path] = size_io.getvalue()
         return icon_sizes, image_datas, css_data, result_images
 
     def get_css_file(self):
@@ -578,6 +594,7 @@ class Button(SimpleButton):
             icon_sizes, image_datas, css_data, result_images = self._get_css()
         chrome_name = self._settings.get("chrome_name")
         if self._settings.get("include_toolbars"):
+            list_style_image = """list-style-image:url("chrome://{chrome_name}/skin/{size}/{icon}");))"""
             for name, selector in (('small', "toolbar[iconsize='small'] .toolbar-buttons-toolbar-toggle"),
                                    ('large', 'toolbar .toolbar-buttons-toolbar-toggle'), 
                                    ('window', '.toolbar-buttons-toolbar-toggle')):
@@ -585,7 +602,10 @@ class Button(SimpleButton):
                     result_images[icon_sizes[name]].add(self._settings.get("icon"))
                     css_data.append(Css(
                         selectors=selector,
-                        declarations="""list-style-image:url("chrome://{chrome_name}/skin/{size}/{icon}");))""".format(icon=self._settings.get("icon"), size=icon_sizes[name], chrome_name=chrome_name)))
+                        declarations=list_style_image.format(
+                            icon=self._settings.get("icon"),
+                            size=icon_sizes[name],
+                            chrome_name=chrome_name)))
         css = template.render(
             blocks=set(self._button_style.values()),
             css_data=css_data
