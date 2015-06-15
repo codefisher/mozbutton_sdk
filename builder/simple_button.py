@@ -51,7 +51,7 @@ class SimpleButton(object):
         self._strings = {}
         self._xul_files = {}
         self._button_folders = {}
-        self._button_windows = defaultdict(list)
+        self.button_windows = defaultdict(list)
         large_icon_size = settings.get("icon_size")[1]
         skip_without_icons = settings.get("skip_buttons_without_icons")
 
@@ -163,7 +163,7 @@ class SimpleButton(object):
 
     def _process_xul_file(self, folder, button, xul_file, file_name):
         application = self._settings.get("file_to_application")[file_name]
-        self._button_windows[button].append(file_name)
+        self.button_windows[button].append(file_name)
         self._button_applications[button].update(set(application).intersection(self._applications))
         return application
 
