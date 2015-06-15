@@ -147,6 +147,12 @@ function loadButtons(window) {
 	keyDisabledWatcher.startup();
 	{%- endif %}
 	{{menu}}
+	{%- for extra in extra_ui %}
+	var {{ extra.parent }}_{{ extra.index }} = document.getElementById('{{ extra.parent_id }}');
+	if({{ extra.parent }}_{{ extra.index }}) {
+		{{ extra.code }}
+	}
+	{% endfor %}
 	{{end}}
 }
 

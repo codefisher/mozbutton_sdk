@@ -13,6 +13,7 @@ except ImportError:
 from builder.ext_button import Button, Option, ChromeString, ChromeFile
 
 Keys = namedtuple("Keys", ['command', 'button'])
+ExtraUI = namedtuple("ExtraUI", ["parent", "parent_id", "index", "code", "after"])
 
 class RestartlessButton(Button):
 
@@ -394,6 +395,7 @@ class RestartlessButton(Button):
                     end.update(self._button_js_setup[js_file].values())
             if self._settings.get("menuitems") and menu:
                 end.add("toolbar_buttons.setUpMenuShower(document);")
+            extra_ui = self.create_extra_ui(file_name, values)
             result[file_name] = template.render(
                 modules=modules_import,
                 locale_file_prefix=self._settings.get("locale_file_prefix"),
@@ -408,9 +410,31 @@ class RestartlessButton(Button):
                 keys=self.jsm_keyboard_shortcuts(file_name),
                 end="\n\t".join(end),
                 buttons="\n\n".join(jsm_file),
+                extra_ui=extra_ui,
                 pref_root=self._settings.get("pref_root"),
                 chrome_name=self._settings.get("chrome_name")
             )
+        return result
+
+    def create_extra_ui(self, file_name, values):
+        location = self._settings.get("location_placement")
+        result = []
+        if location and file_name in self._settings.get("file_to_location", {}).get(location):
+            for index, (button_id, xul) in enumerate(values.items()):
+                parent, parent_id, after, attrib = self._settings.get("file_to_location").get(location).get(file_name)
+                root = ET.fromstring(xul.replace('&', '&amp;'))
+                root.attrib["insertafter"] = after
+                root.attrib["id"] += "-extra-ui"
+                self._ui_ids.add(root.attrib["id"])
+                if attrib:
+                    for name, value in attrib.items():
+                        if value is None:
+                            del root.attrib[name]
+                        else:
+                            root.attrib[name] = value
+                parent_var = "{}_{}".format(parent, index)
+                statements, _, _ = self._create_dom(root, top=parent_var)
+                result.append(ExtraUI(parent, parent_id, index, "\n\t\t".join(statements), after))
         return result
     
     def _create_jsm_toolbar(self, button_hash, toolbar_template, file_name, values):

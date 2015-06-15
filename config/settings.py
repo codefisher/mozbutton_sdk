@@ -64,6 +64,8 @@ config = {
     # if a tuple, in what is named in the tuple, which should be the id of the menu, and insert point
     "menu_placement": None,
 
+    "location_placement": None,
+
     # if set, the disciption will be change to list the buttons in the extension
     # and if there is only one button, also the title and icon will be change
     "fix_meta": False,
@@ -255,5 +257,10 @@ config = {
     },
     "file_exclude": {
         "lightning": ("mail", "messenger")
+    },
+    "file_to_location": {
+        "statusbar": {
+            "suite_browser": ("statusbar", "status-bar", "component-bar", {"class": "taskbutton", "label": None})
+        }
     }
 }

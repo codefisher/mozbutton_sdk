@@ -408,6 +408,8 @@ class Button(SimpleButton):
             icon_size["window"] = small if int(small) >= 32 else large
         if self._settings.get('menuitems') or (self._settings.get("icon") and self._settings.get("menu_meta")):
             icon_size["menu"] = "16"
+        if self._settings.get("location_placement"):
+            icon_size["extra_ui"] = "16"
         return icon_size
 
     @staticmethod
@@ -437,6 +439,8 @@ class Button(SimpleButton):
                 else:
                     selectors[size].append("#{}{}".format(button, modifier))
                     selectors[size].append("#{}-menu-item{}".format(button, modifier))
+            elif name == "extra_ui":
+                selectors[size].append("#{}-extra-ui{}".format(button, modifier))
         return selectors
 
     @staticmethod
