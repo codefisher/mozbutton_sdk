@@ -71,7 +71,7 @@ class RestartlessButton(Button):
         if self._settings.get('use_keyboard_shortcuts'):
             for button in self._button_keys.keys():
                 settings.append(("{}key-disabled.{}".format(pref_root, button), 'false'))
-                properties = self.pref_locale_file("'chrome://{chrome_name}/locale/{prefex}keys.properties'")
+                properties = self.pref_locale_file("'chrome://{chrome_name}/locale/{prefix}keys.properties'")
                 settings.append(("{}key.{}".format(pref_root, button), properties))
                 settings.append(("{}modifier.{}".format(pref_root, button), properties))
         return settings

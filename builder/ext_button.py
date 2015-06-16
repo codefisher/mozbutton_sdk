@@ -121,10 +121,10 @@ class Button(SimpleButton):
                 for file_name in os.listdir(os.path.join(folder, "res")):
                     if file_name[0] != ".":
                         self.resource_files[file_name] = os.path.join(folder, "res", file_name)
-            for file_name, obj in (
+            for list_name, obj in (
                     ('res_list', self.resource_files), ('file_list', self.extra_files)):
-                if file_name in files:
-                    with open(os.path.join(folder, file_name), "r") as res_list:
+                if list_name in files:
+                    with open(os.path.join(folder, list_name), "r") as res_list:
                         for file_name in (file_name.strip()
                                 for file_name in res_list if file_name.strip()):
                             obj[file_name] = self.find_file(file_name)
@@ -256,7 +256,7 @@ class Button(SimpleButton):
         extra_strings = button_locales.get_string_data(self.get_extra_locale_strings(), self)
         for locale, data in self.locale_file_filter(extra_strings, locales_inuse):
             yield locale, "files.dtd", data
-        properties_data = button_locales.get_properties_data(self._properties_strings(), self)
+        properties_data = button_locales.get_properties_data(self._properties_strings, self)
         for locale, data in self.locale_file_filter(properties_data, locales_inuse):
             yield locale, "button.properties", data
         if self.has_options:
@@ -307,14 +307,14 @@ class Button(SimpleButton):
 
     def pref_locale_file(self, string):
         return string.format(chrome_name=self._settings.get("chrome_name"),
-                       prefex=self._settings.get("locale_file_prefix"))
+                       prefix=self._settings.get("locale_file_prefix"))
 
     def get_pref_list(self):
         settings = []
         pref_root = self._settings.get("pref_root")
         if self._settings.get("translate_description"):
             settings.append(("extensions.{}.description".format(self._settings.get("extension_id")),
-                         self.pref_locale_file("'chrome://{chrome_name}/locale/{prefex}button.properties'")))
+                         self.pref_locale_file("'chrome://{chrome_name}/locale/{prefix}button.properties'")))
         if self._settings.get("show_updated_prompt") or self._settings.get("add_to_main_toolbar"):
             settings.append((pref_root + self._settings.get("current_version_pref"), "''"))
         if self._settings.get("menuitems"):
@@ -647,7 +647,8 @@ class Button(SimpleButton):
             others.append(other)
         return matches, others
 
-    def add_dependencies(self, detect_dependency, externals, extra_functions, js_imports):
+    @staticmethod
+    def add_dependencies(detect_dependency, externals, extra_functions, js_imports):
         loop_imports = js_imports
         while loop_imports:
             new_extra = [externals[func_name] for func_name in loop_imports
