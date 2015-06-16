@@ -6,6 +6,7 @@ except ImportError:
     pass
 import operator
 import itertools
+import json
 
 from builder.ext_button import Button, ChromeString
 
@@ -13,27 +14,20 @@ class OverlayButton(Button):
 
     def get_js_files(self):
         js_files = super(OverlayButton, self).get_js_files()
-        if self._settings.get("show_updated_prompt") or self._settings.get("add_to_main_toolbar"):
-            update_file = os.path.join(self._settings.get("project_root"), "files", "update.js")
-            if not os.path.isfile(update_file):
-                update_file = os.path.join(self._settings.get('button_sdk_root'), "templates", "update.js")
-            with open(update_file, "r") as update_js:
-                show_update = (update_js.read()
-                           .replace("{{uuid}}", self._settings.get("extension_id"))
-                           .replace("{{homepage_url}}",
-                                    self._settings.get("homepage"))
-                           .replace("{{version}}",
-                                    self._settings.get("version"))
-                           .replace("{{chrome_name}}",
-                                    self._settings.get("chrome_name"))
-                           .replace("{{current_version_pref}}",
-                                    self._settings.get("current_version_pref"))
-                           )
-            if self._settings.get("show_updated_prompt"):
-                show_update += "load_toolbar_button.callbacks.push(load_toolbar_button.load_url);\n"
-            if self._settings.get("add_to_main_toolbar"):
-                buttons = ", ".join("'%s'" % item for item in self._settings.get("add_to_main_toolbar"))
-                show_update += "load_toolbar_button.callbacks.push(function(previousVersion, currentVersion) { if(previousVersion == '') { load_toolbar_button.add_buttons([%s]);} });\n" % buttons
+        show_updated_prompt = self._settings.get("show_updated_prompt")
+        add_to_main_toolbar = self._settings.get("add_to_main_toolbar")
+        if show_updated_prompt or add_to_main_toolbar:
+            update_file = self.env.get_template("update.js")
+            show_update = update_file.render(
+                show_updated_prompt=show_updated_prompt,
+                add_to_main_toolbar=bool(add_to_main_toolbar),
+                buttons=json.dumps(add_to_main_toolbar),
+                current_version_pref=self._settings.get("current_version_pref"),
+                uuid=self._settings.get("extension_id"),
+                version=self._settings.get("version"),
+                homepage_url=self._settings.get("homepage"),
+                javascript_object=self._settings.get("javascript_object")
+            )
             js_files["button"] = show_update + "\n" + js_files["button"]
         return js_files
 
@@ -46,7 +40,8 @@ class OverlayButton(Button):
             yield chrome_string
         defaults =  self.get_defaults()
         if defaults:
-            yield ChromeString(file_name=os.path.join("defaults", "preferences", "defaultprefs.js"), data=defaults)
+            fiile_name = os.path.join("defaults", "preferences", "defaultprefs.js")
+            yield ChromeString(file_name=fiile_name, data=defaults)
 
     def locale_files(self, button_locales, *args, **kwargs):
         dtd_data = button_locales.get_dtd_data(self.get_locale_strings(),
@@ -65,7 +60,7 @@ class OverlayButton(Button):
                      "\tchrome://{chrome}/skin/button.css".format(chrome=chrome_name))
         if self.resource_files:
             lines.append("resource\t{chrome}\tchrome://{chrome}/content/resources/".format(chrome=chrome_name))
-        for file_name in self.get_file_names():
+        for file_name in self._button_files:
             for overlay in self._settings.get("files_to_overlay").get(file_name, ()):
                 lines.append("overlay\t{overlay}\t"
                              "chrome://{chrome}/content/{file_name}.xul".format(chrome=chrome_name, file_name=file_name, overlay=overlay))
@@ -139,3 +134,65 @@ class OverlayButton(Button):
                         )
             result[file_name] = xul_file
         return result
+
+    def get_keyboard_shortcuts(self, file_name):
+        if not self._settings.get("use_keyboard_shortcuts") or not self._settings.get("file_to_keyset").get(file_name):
+            return ""
+        keys = []
+        pref_root = self._settings.get('pref_root')
+        for button, (key, modifier) in self._button_keys.items():
+            attr = 'key' if len(key) == 1 else "keycode"
+            if file_name in self._button_xul:
+                mod = "" if not modifier else 'modifiers="&%smodifier.%s;" ' % (pref_root, button)
+                command = self._button_commands.get(file_name, {}).get(button)
+                if command:
+                    keys.append("""<key %s="&%skey.%s;" %sid="%s-key" oncommand="%s" />""" % (attr, pref_root, button, mod, button, command))
+                else:
+                    if self._settings.get("menuitems"):
+                        keys.append("""<key %s="&%skey.%s;" %sid="%s-key" command="%s-menu-item" />""" % (attr, pref_root, button, mod, button, button))
+                    else:
+                        keys.append("""<key %s="&%skey.%s;" %sid="%s-key" command="%s" />""" % (attr, pref_root, button, mod, button, button))
+        if keys:
+            return """\n <keyset id="%s">\n\t%s\n </keyset>""" % (self._settings.get("file_to_keyset").get(file_name), "\n\t".join(keys))
+        else:
+            return ""
+
+    def _create_toolbar(self, button_hash, toolbar_template, file_name, values):
+        toolbar_ids = []
+        tool_bars = []
+        bottom_bars = []
+        if file_name in self._settings.get("extra_toolbars_disabled"):
+            return tool_bars, bottom_bars, toolbar_ids
+        count = 0
+        max_count = self._settings.get("buttons_per_toolbar")
+        buttons = values.keys()
+        for box_setting, include_setting, toolbars in [("file_to_toolbar_box", "include_toolbars", tool_bars),
+                                                       ("file_to_bottom_box", "include_satusbars", bottom_bars)]:
+            toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
+            if self._settings.get(include_setting) and toolbar_box:
+                number = self.toolbar_count(include_setting, values, max_count)
+                defaultset = ""
+                for i in range(number):
+                    if self._settings.get("put_button_on_toolbar"):
+                        defaultset = 'defaultset="%s"' % ",".join(buttons[i * max_count:(i + 1) * max_count])
+                    button_hash.update(str(i))
+                    hash_code = button_hash.hexdigest()[:6]
+                    label_number = "" if (number + count) == 1 else " %s" % (i + count + 1)
+                    toolbar_ids.append("tb-toolbar-%s" % hash_code)
+                    toolbar_box_id = "" if include_setting == "include_toolbars" else 'toolboxid="%s" ' % toolbar_box
+                    toolbars.append('''<toolbar %spersist="collapsed,hidden" context="toolbar-context-menu" class="toolbar-buttons-toolbar chromeclass-toolbar" id="tb-toolbar-%s" mode="icons" iconsize="small" customizable="true" %s toolbarname="&tb-toolbar-buttons-toggle-toolbar.name;%s"/>''' % (toolbar_box_id, hash_code, defaultset, label_number))
+                    values["tb-toolbar-buttons-toggle-toolbar-%s" % hash_code] = toolbar_template.replace("{{hash}}", hash_code).replace("{{ number }}", label_number)
+                count += number
+        return tool_bars, bottom_bars, toolbar_ids
+
+    def _wrap_create_toolbar(self, button_hash, toolbar_template, file_name, values):
+        tool_bars, bottom_box, toolbar_ids = self._create_toolbar(button_hash, toolbar_template, file_name, values)
+        if not tool_bars and not bottom_box:
+            return '', []
+        result = []
+        for toolbars, box_setting in ((tool_bars, "file_to_toolbar_box"), (bottom_box, "file_to_bottom_box")):
+            if not toolbars:
+                continue
+            toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
+            result.append('\n<%s id="%s">\n%s\n</%s>' % (toolbar_node, toolbar_box, '\n'.join(toolbars), toolbar_node))
+        return "\n\t".join(result), toolbar_ids

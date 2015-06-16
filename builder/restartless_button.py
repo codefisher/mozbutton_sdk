@@ -105,7 +105,7 @@ class RestartlessButton(Button):
             resource = "createResource('%s', 'chrome://%s/content/resources/');" % (chrome_name, chrome_name)
         install = ""
         window_modules = defaultdict(list)
-        for file_name in self.get_file_names():
+        for file_name in self._button_files:
             for overlay in self._settings.get("files_to_window").get(file_name, ()):
                 window_modules[overlay].append(file_name)
 

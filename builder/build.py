@@ -113,7 +113,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     options = buttons.get_options()
     for file, data in options.items():
         xpi.writestr(os.path.join("chrome", "content", "%s.xul" % file), data)
-    for image in buttons.get_option_icons():
+    for image in buttons.option_icons:
         xpi.write(get_image(settings, "32", image), os.path.join("chrome", "skin", "option", image))
 
     locale_prefix = settings.get("locale_file_prefix")

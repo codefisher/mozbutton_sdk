@@ -1,27 +1,27 @@
-if(!this.load_toolbar_button) {
-	var load_toolbar_button = {
+if(!this.load_{{ javascript_object }}) {
+	var load_{{ javascript_object }} = {
 		callbacks: [],
 		
 		start: function() {
 			var version = "{{version}}";
 			var prefService = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService);
-			var prefs = toolbar_buttons.interfaces.ExtensionPrefBranch;
+			var prefs = {{ javascript_object }}.interfaces.ExtensionPrefBranch;
 			var currentVersion = prefs.getCharPref("{{current_version_pref}}");
 			
 			if(currentVersion != version){
 				prefs.setCharPref("{{current_version_pref}}", version);
 				prefService.savePrefFile(null);
-				//load_toolbar_button.load_url(currentVersion, version);
-				var callbacks = load_toolbar_button.callbacks;
+				//load_{{ javascript_object }}.load_url(currentVersion, version);
+				var callbacks = load_{{ javascript_object }}.callbacks;
 				for(var i = 0; i < callbacks.length; i++) {
-					load_toolbar_button.callbacks[i](currentVersion, version);
+					load_{{ javascript_object }}.callbacks[i](currentVersion, version);
 				}
 			}
-			window.removeEventListener("load", load_toolbar_button.start, false);
+			window.removeEventListener("load", load_{{ javascript_object }}.start, false);
 			
 		},
 		file_put_contents: function(file,data) {
-			var foStream = toolbar_buttons.interfaces.FileOutputStream();
+			var foStream = {{ javascript_object }}.interfaces.FileOutputStream();
 			foStream.init(file, 0x02 | 0x08 | 0x20, 0664, 0);
 			foStream.write(data, data.length);
 			foStream.close();
@@ -49,8 +49,8 @@ if(!this.load_toolbar_button) {
 			try {
 				window.getBrowser().selectedTab = window.getBrowser().addTab(url);
 			} catch (e) {
-				var uri = toolbar_buttons.interfaces.IOService.newURI(url, null, null);
-				toolbar_buttons.interfaces.ExternalProtocolService.loadUrl(uri);
+				var uri = {{ javascript_object }}.interfaces.IOService.newURI(url, null, null);
+				{{ javascript_object }}.interfaces.ExternalProtocolService.loadUrl(uri);
 			}
 		},
 		add_buttons: function(buttons) {
@@ -66,25 +66,37 @@ if(!this.load_toolbar_button) {
 			}
 		},
 		observe: function(aSubject, aTopic, aData) {
-			window.setTimeout(function() { load_toolbar_button.start(); }, 100);
+			window.setTimeout(function() { load_{{ javascript_object }}.start(); }, 100);
 		},
 		restore: function() {
-			window.setTimeout(function() { load_toolbar_button.start(); }, 100);
-			document.removeEventListener("SSTabRestoring", load_toolbar_button.restore, false);
+			window.setTimeout(function() { load_{{ javascript_object }}.start(); }, 100);
+			document.removeEventListener("SSTabRestoring", load_{{ javascript_object }}.restore, false);
 		}
 	};
 	try {
-		var prefs = toolbar_buttons.interfaces.PrefBranch;
-		if(prefs.getIntPref('browser.startup.page') == 3 || prefs.getBoolPref('browser.sessionstore.resume_session_once')) {
+		var prefs = {{ javascript_object }}.interfaces.PrefBranch;
+		if(prefs.getIntPref('browser.startup.page') == 3
+			|| prefs.getBoolPref('browser.sessionstore.resume_session_once')) {
 			//this observer never seems to run for some reason??
 			//var observerService = Cc["@mozilla.org/observer-service;1"]
-		    //              .getService(Ci.nsIObserverService);
-		    //observerService.addObserver(load_toolbar_button, 'sessionstore-state-finalized', false);
-		    document.addEventListener("SSTabRestoring", load_toolbar_button.restore, false);
+			//              .getService(Ci.nsIObserverService);
+			//observerService.addObserver(load_{{ javascript_object }}, 'sessionstore-state-finalized', false);
+			document.addEventListener("SSTabRestoring", load_{{ javascript_object }}.restore, false);
 		} else {
-			window.addEventListener("load", load_toolbar_button.start, false);
+			window.addEventListener("load", load_{{ javascript_object }}.start, false);
 		}
 	} catch(e) {
-		window.addEventListener("load", load_toolbar_button.start, false);
+		window.addEventListener("load", load_{{ javascript_object }}.start, false);
 	}
 }
+{%- if show_updated_prompt %}
+load_{{ javascript_object }}.callbacks.push(load_{{ javascript_object }}.load_url);
+{%- endif %}
+{%- if add_to_main_toolbar %}
+load_{{ javascript_object }}.callbacks.push(
+	function(previousVersion, currentVersion) {
+		if(previousVersion == '') {
+			load_{{ javascript_object }}.add_buttons({{ buttons }});
+		}
+	});
+{%- endif %}

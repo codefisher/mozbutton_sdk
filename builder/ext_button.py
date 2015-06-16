@@ -56,7 +56,7 @@ class Button(SimpleButton):
         self._pref_list = defaultdict(list)
         self._button_style = {}
         self._option_titles = set()
-        self._option_icons = set()
+        self.option_icons = set()
         self._modules = defaultdict(set)
         self._button_js_setup = defaultdict(dict)
         self._button_commands = defaultdict(dict)
@@ -135,9 +135,6 @@ class Button(SimpleButton):
                 with open(os.path.join(folder, "modules"), "r") as modules:
                     self._modules[button].update(line.strip() for line in modules)
 
-    def get_supported_applications(self):
-        return self._supported_applications
-
     def get_description(self, button):
         folder = self._button_folders[button]
         with open(os.path.join(folder, "description"), "r") as description:
@@ -152,9 +149,6 @@ class Button(SimpleButton):
         with open(os.path.join(folder, xul_file)) as xul:
             self._button_xul[file_name][button] = xul.read().strip()
 
-    def get_manifest(self):
-        return "\n".join(self._manifest)
-
     def append_option(self, files, apps, first, data):
         meta = first.strip().split(':')
         if len(meta) == 2:
@@ -162,7 +156,7 @@ class Button(SimpleButton):
         else:
             title, icon, appslist = meta
             apps = apps.intersection(appslist.split())
-        self._option_icons.add(icon)
+        self.option_icons.add(icon)
         self._option_titles.add(title)
         for app in apps:
             self._option_applications.add(app)
@@ -239,20 +233,6 @@ class Button(SimpleButton):
         self.has_options = bool(result)
         return result
 
-    def get_options_applications(self):
-        """Returns a list of applications with options
-
-        precondition: get_options() has been called
-        """
-        return self._option_applications
-
-    def get_option_icons(self):
-        """Returns a list of icons used by the options window
-
-        precondition: get_options() has been called
-        """
-        return self._option_icons
-
     def get_files(self):
         """Iterator over a tuple of filename and data"""
         raise NotImplementedError()
@@ -276,16 +256,13 @@ class Button(SimpleButton):
         extra_strings = button_locales.get_string_data(self.get_extra_locale_strings(), self)
         for locale, data in self.locale_file_filter(extra_strings, locales_inuse):
             yield locale, "files.dtd", data
-        properties_data = button_locales.get_properties_data(self.get_properties_strings(), self)
+        properties_data = button_locales.get_properties_data(self._properties_strings(), self)
         for locale, data in self.locale_file_filter(properties_data, locales_inuse):
             yield locale, "button.properties", data
         if self.has_options:
             options_strings = button_locales.get_string_data(self.get_options_strings(), self)
             for locale, data in self.locale_file_filter(options_strings, locales_inuse):
                 yield locale, "options.dtd", data
-
-    def get_file_names(self):
-        return self._button_files
 
     def get_locale_strings(self):
         locale_match = re.compile("&([a-zA-Z0-9.-]*);")
@@ -371,9 +348,9 @@ class Button(SimpleButton):
     def create_install(self):
         template = self.env.get_template('install.rdf')
         applications = chain.from_iterable(self._settings.get("applications_data").get(application)
-                        for application in self.get_supported_applications())
+                        for application in self._supported_applications)
         return template.render(
-            ext_options=self.get_options_applications(),
+            ext_options=self._option_applications,
             ext_applications=applications,
             **self._settings)
 
@@ -382,12 +359,12 @@ class Button(SimpleButton):
         chrome_name=self._settings.get("chrome_name")
         lines.append("content\t{chrome}\tchrome/content/".format(chrome=chrome_name))
         lines.append("skin\t{chrome}\tclassic/1.0\tchrome/skin/".format(chrome=chrome_name))
-        for option in self.get_options_applications():
+        for option in self._option_applications:
             for _, application_id, _, _ in self._settings.get("applications_data")[option]:
                 lines.append("override\tchrome://{chrome}/content/options.xul\t"
                              "chrome://{chrome}/content/{application}"
                              "-options.xul\tapplication={app_id}".format(chrome=chrome_name, app_id=application_id, application=option))
-        manifest = self.get_manifest()
+        manifest = "\n".join(self._manifest)
         if manifest:
             lines.append(manifest.format(chrome=chrome_name))
         for locale in self.locales_in_use:
@@ -766,35 +743,6 @@ class Button(SimpleButton):
             self._has_javascript = True
         return js_files
 
-    def get_properties_strings(self):
-        """Returns the .properties strings used by the buttons.
-
-        Precondition: get_js_files() has been called
-        """
-        return self._properties_strings
-
-    def get_keyboard_shortcuts(self, file_name):
-        if not self._settings.get("use_keyboard_shortcuts") or not self._settings.get("file_to_keyset").get(file_name):
-            return ""
-        keys = []
-        pref_root = self._settings.get('pref_root')
-        for button, (key, modifier) in self._button_keys.items():
-            attr = 'key' if len(key) == 1 else "keycode"
-            if file_name in self._button_xul:
-                mod = "" if not modifier else 'modifiers="&%smodifier.%s;" ' % (pref_root, button)
-                command = self._button_commands.get(file_name, {}).get(button)
-                if command:
-                    keys.append("""<key %s="&%skey.%s;" %sid="%s-key" oncommand="%s" />""" % (attr, pref_root, button, mod, button, command))
-                else:
-                    if self._settings.get("menuitems"):
-                        keys.append("""<key %s="&%skey.%s;" %sid="%s-key" command="%s-menu-item" />""" % (attr, pref_root, button, mod, button, button))
-                    else:
-                        keys.append("""<key %s="&%skey.%s;" %sid="%s-key" command="%s" />""" % (attr, pref_root, button, mod, button, button))
-        if keys:
-            return """\n <keyset id="%s">\n\t%s\n </keyset>""" % (self._settings.get("file_to_keyset").get(file_name), "\n\t".join(keys))
-        else:
-            return ""
-
     def create_menu_dom(self, file_name, buttons):
         data = {}
         menuitems = self._settings.get("menuitems")
@@ -854,46 +802,6 @@ class Button(SimpleButton):
         if number == -1:
             number = int(math.ceil(float(len(values)) / max_count))
         return number
-
-    def _create_toolbar(self, button_hash, toolbar_template, file_name, values):
-        toolbar_ids = []
-        tool_bars = []
-        bottom_bars = []
-        if file_name in self._settings.get("extra_toolbars_disabled"):
-            return tool_bars, bottom_bars, toolbar_ids
-        count = 0
-        max_count = self._settings.get("buttons_per_toolbar")
-        buttons = values.keys()
-        for box_setting, include_setting, toolbars in [("file_to_toolbar_box", "include_toolbars", tool_bars),
-                                                       ("file_to_bottom_box", "include_satusbars", bottom_bars)]:
-            toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
-            if self._settings.get(include_setting) and toolbar_box:
-                number = self.toolbar_count(include_setting, values, max_count)
-                defaultset = ""
-                for i in range(number):
-                    if self._settings.get("put_button_on_toolbar"):
-                        defaultset = 'defaultset="%s"' % ",".join(buttons[i * max_count:(i + 1) * max_count])
-                    button_hash.update(str(i))
-                    hash_code = button_hash.hexdigest()[:6]
-                    label_number = "" if (number + count) == 1 else " %s" % (i + count + 1)
-                    toolbar_ids.append("tb-toolbar-%s" % hash_code)
-                    toolbar_box_id = "" if include_setting == "include_toolbars" else 'toolboxid="%s" ' % toolbar_box
-                    toolbars.append('''<toolbar %spersist="collapsed,hidden" context="toolbar-context-menu" class="toolbar-buttons-toolbar chromeclass-toolbar" id="tb-toolbar-%s" mode="icons" iconsize="small" customizable="true" %s toolbarname="&tb-toolbar-buttons-toggle-toolbar.name;%s"/>''' % (toolbar_box_id, hash_code, defaultset, label_number))
-                    values["tb-toolbar-buttons-toggle-toolbar-%s" % hash_code] = toolbar_template.replace("{{hash}}", hash_code).replace("{{ number }}", label_number)
-                count += number
-        return tool_bars, bottom_bars, toolbar_ids
-    
-    def _wrap_create_toolbar(self, button_hash, toolbar_template, file_name, values):
-        tool_bars, bottom_box, toolbar_ids = self._create_toolbar(button_hash, toolbar_template, file_name, values)
-        if not tool_bars and not bottom_box:
-            return '', []
-        result = []
-        for toolbars, box_setting in ((tool_bars, "file_to_toolbar_box"), (bottom_box, "file_to_bottom_box")):
-            if not toolbars: 
-                continue
-            toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
-            result.append('\n<%s id="%s">\n%s\n</%s>' % (toolbar_node, toolbar_box, '\n'.join(toolbars), toolbar_node))
-        return "\n\t".join(result), toolbar_ids
 
     def _get_toolbar_info(self):
         button_hash = None
