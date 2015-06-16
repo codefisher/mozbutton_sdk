@@ -34,6 +34,7 @@ config = {
     # these settings change the internals of the extension
     "pref_root": "",
     "chrome_name": "",
+    "javascript_object": 'extension_object',
     "icon_size": ("16", "24"),
     "image_path": None,
     "include_icons_for_custom_window": False,
@@ -94,10 +95,7 @@ config = {
 
     # parts of the extension are copied here, if set
     "profile_folder": None,
-    
-    # set when trying to create buttons for the custombuttons extension
-    "custom_button_mode": False,
-    
+
     # this is a prefix that is auto added to button when using the start button script
     "new_button_prefix": "",
 

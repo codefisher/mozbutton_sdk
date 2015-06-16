@@ -182,10 +182,10 @@ class RestartlessButton(Button):
         statements = [
             "var %s_%s = %s.createElement('%s');" % (root.tag, num, doc, rename.get(root.tag, root.tag)),
         ]
+        javascript_object = self._settings.get("javascript_object")
         for key, value in sorted(root.attrib.items(), key=self._attr_key):
             if key == 'id':
-                if not self._settings.get("custom_button_mode"):
-                    statements.append("%s_%s.id = '%s';" % (root.tag, num, value))
+                statements.append("%s_%s.id = '%s';" % (root.tag, num, value))
             elif key in ('label', 'tooltiptext') or (root.tag == 'key' and key in ('key', 'keycode', 'modifiers')):
                 statements.append("%s_%s.setAttribute('%s', %s);" % ((root.tag, num, key, self._dom_string_lookup(value))))
             elif key == "class":
@@ -197,14 +197,11 @@ class RestartlessButton(Button):
                     # but we can't call our function, because that might not exist 
                     # in the window scope, so the event listener has to be used
                     statements.append("%s_%s.setAttribute('oncommand', 'void(0);');" % (root.tag, num))
-                if key == 'oncommand' and self._settings.get("custom_button_mode") and top == None:
-                    self._command = value
-                else:
-                    statements.append("%s_%s.addEventListener('%s', function(event) {\n\t\t\t\t%s\n\t\t\t}, false);" % (root.tag, num, key[2:], self._patch_call(value)))
+                statements.append("%s_%s.addEventListener('%s', function(event) {\n\t\t\t\t%s\n\t\t\t}, false);" % (root.tag, num, key[2:], self._patch_call(value)))
             elif key == "insertafter":
                 pass
             elif key == "showamenu":
-                statements.append("%s_%s.addEventListener('DOMMenuItemActive', toolbar_buttons.menuLoaderEvent, false);"  % (root.tag, num))
+                statements.append("{}_{}.addEventListener('DOMMenuItemActive', {}.menuLoaderEvent, false);".format(root.tag, num, javascript_object))
                 statements.append("%s_%s._handelMenuLoaders = true;"  % (root.tag, num))
                 statements.append("%s_%s.setAttribute('%s', '%s');" % ((root.tag, num, key, value)))
             elif key == "toolbarname":
@@ -367,6 +364,8 @@ class RestartlessButton(Button):
         simple_attrs = {'label', 'tooltiptext', 'id', 'oncommand', 'onclick', 'key', 'class'}
         button_hash, toolbar_template = self._get_toolbar_info()
         template = self.env.get_template('button.jsm')
+        javascript_object = self._settings.get("javascript_object")
+
         for file_name, values in self._button_xul.items():
             jsm_file = []
             js_includes = [js_file for js_file in self._get_js_file_list(file_name)
@@ -394,7 +393,7 @@ class RestartlessButton(Button):
                 if self._button_js_setup.get(js_file, {}):
                     end.update(self._button_js_setup[js_file].values())
             if self._settings.get("menuitems") and menu:
-                end.add("toolbar_buttons.setUpMenuShower(document);")
+                end.add(javascript_object + ".setUpMenuShower(document);")
             extra_ui = self.create_extra_ui(file_name, values)
             result[file_name] = template.render(
                 modules=modules_import,

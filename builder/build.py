@@ -77,7 +77,10 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     if len(buttons.buttons()) == 0:
         raise ExtensionConfigError("The selected config would have no buttons.")
     
-    xpi_file_name = os.path.join(settings.get("project_root"), settings.get("output_folder"), settings.get("output_file", "toolbar_buttons.xpi") % settings)
+    xpi_file_name = os.path.join(
+        settings.get("project_root"),
+        settings.get("output_folder"),
+        settings.get("output_file", "toolbar_buttons.xpi") % settings)
     if output:
         xpi = zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED)
     else:
@@ -91,8 +94,11 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
         xpi.writestr(os.path.join("chrome", "content", file_name), bytes_string(data))
 
     if settings.get("fix_meta"):
-        locale_str = buttons.locale_string(button_locale=button_locales, locale_name=locales[0] if len(locales) == 1 else None)
-        labels = sorted([locale_str("label", button) for button in buttons.buttons()], key=unicode.lower)
+        locale_name = locales[0] if len(locales) == 1 else None
+        locale_str = buttons.locale_string(
+            button_locale=button_locales, locale_name=locale_name)
+        labels = sorted((locale_str("label", button)
+                         for button in buttons.buttons()), key=unicode.lower)
         if len(buttons) == 1:
             button = buttons.buttons()[0]
             settings["name"] = labels[0] + " Button"
@@ -100,7 +106,9 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
             if not settings.get("icon"):
                 settings["icon"] = buttons.get_icons(button)
         else:
-            settings["description"] = "A customized version of Toolbar Buttons including the buttons: %s" % ", ".join(labels)
+            description = "A customized version of {} including the buttons: {}"
+            settings["description"] = description.format(
+                settings["name"], ", ".join(labels))
 
     options = buttons.get_options()
     for file, data in options.items():

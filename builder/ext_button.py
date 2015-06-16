@@ -30,6 +30,7 @@ Option = namedtuple('Option', ['firstline', 'xul'])
 OptionPanel = namedtuple('OptionPanel', ['options', 'icon', 'panel_id'])
 ChromeString = namedtuple('ChromeString', ['file_name', 'data'])
 ChromeFile = namedtuple('ChromeFile', ['file_name', 'path'])
+JavascriptInfo = namedtuple('JavascriptInfo', ['interfaces', 'functions', 'extra'])
 
 string_match = re.compile(r"StringFromName\(\"([a-zA-Z0-9.-]*?)\"")
 
@@ -612,136 +613,157 @@ class Button(SimpleButton):
         )
         return css, result_images, image_datas
 
-    def get_js_files(self):
-        interface_match = re.compile(r"(?<=toolbar_buttons.interfaces.)[a-zA-Z]*")
-        function_match = re.compile(r"^[a-zA-Z0-9_]*\s*:\s*(?:function\([^\)]*\)\s*)?\{.*?^\}[^\n]*",
-                                    re.MULTILINE | re.DOTALL)
-        function_name_match = re.compile(r"((^[a-zA-Z0-9_]*)\s*:\s*(?:function\s*\([^\)]*\)\s*)?\{.*?^\})",
-                                          re.MULTILINE | re.DOTALL)
-        detect_dependency = re.compile(r"(?<=toolbar_buttons.)[a-zA-Z]*")
-
-        multi_line_replace = re.compile(r"\n{2,}")
-        js_files = defaultdict(str)
-        js_includes = set()
-        js_options_include = set()
+    def get_js_imports(self):
         js_imports = set()
-        
-        # we look though the XUL for functions first
-        for file_name, values in self._button_xul.items():
-            for button, xul in values.items():
-                js_imports.update(detect_dependency.findall(xul))
         if self._settings.get("menuitems"):
             js_imports.add("sortMenu")
             js_imports.add("handelMenuLoaders")
             js_imports.add("setUpMenuShower")
         if self._settings.get("use_keyboard_shortcuts"):
             js_imports.add("settingWatcher")
+        if self._settings.get("include_toolbars"):
+            js_imports.add("toggleToolbar")
+        return js_imports
 
-        for file_name, js in self._button_js.items():
-            js_file = "\n".join(js.values())
-            js_functions = function_match.findall(js_file)
-            js_imports.update(detect_dependency.findall(js_file))
-            if js_functions:
-                js_functions.sort(key=lambda x: x.lower())
-                js_files[file_name] = "\t" + "\n\t".join(
-                        ",\n".join(js_functions).split("\n"))
-            for button_id, value in js.items():
-                value = multi_line_replace.sub("\n", function_match.sub("", value).strip())
-                if value:
-                    self._button_js_setup[file_name][button_id] = value
-            if self._settings.get("menuitems"):
-                self._button_js_setup[file_name]["_menu_hider"] = "toolbar_buttons.setUpMenuShower(document);"
+    def get_interfaces(self):
+        interfaces = {}
+        interfaces_file = self.find_file('interfaces')
+        with open(interfaces_file, "r") as interfaces_data:
+            for line in interfaces_data:
+                name, _ = line.split(":")
+                interfaces[name] = line.strip()
+        return interfaces
+
+    def get_library_functions(self):
         externals = {}
-        lib_folders = [os.path.join(self._settings.get("button_sdk_root"), "files", "lib"),
-                       os.path.join(self._settings.get("project_root"), "files", "lib")]
+        function_name_match = re.compile(
+            r"((^[a-zA-Z0-9_]*)\s*:\s*(?:function\s*\([^\)]*\)\s*)?\{.*?^\})",
+            re.MULTILINE | re.DOTALL)
+        lib_folders = [
+            os.path.join(self._settings.get("button_sdk_root"), "files", "lib"),
+            os.path.join(self._settings.get("project_root"), "files", "lib")]
         for lib_folder in lib_folders:
             if os.path.isdir(lib_folder):
                 for file_name in os.listdir(lib_folder):
-                    with open(os.path.join(lib_folder, file_name), "r") as shared_functions_file:
-                        externals.update({name: function for function, name
-                                 in function_name_match.findall(shared_functions_file.read())})
-        if self._settings.get("include_toolbars"):
-            js_imports.add("toggleToolbar")
-        extra_functions = []
-        js_imports.update(js_includes)
+                    path = os.path.join(lib_folder, file_name)
+                    with open(path, "r") as fp:
+                        external = {name: function
+                            for function, name
+                            in function_name_match.findall(fp.read())}
+                        externals.update(external)
+        return externals
+
+    @staticmethod
+    def re_groups(string, reg):
+        others = []
+        matches = []
+        index = 0
+        for match in reg.finditer(string):
+            start, end = match.span()
+            other = string[index:start].strip()
+            if other:
+                others.append(other)
+            matches.append(string[start:end].strip())
+            index = end
+        other = string[index:].strip()
+        if other:
+            others.append(other)
+        return matches, others
+
+    def add_dependencies(self, detect_dependency, externals, extra_functions, js_imports):
         loop_imports = js_imports
         while loop_imports:
             new_extra = [externals[func_name] for func_name in loop_imports
-                    if func_name in js_imports if func_name in externals]
+                         if func_name in js_imports if func_name in externals]
             extra_functions.extend(new_extra)
             new_imports = set(detect_dependency.findall("\n".join(new_extra)))
             loop_imports = new_imports.difference(js_imports)
             js_imports.update(loop_imports)
 
-        js_extra_file = "\n\t".join(",\n".join(extra_functions).split("\n"))
-        if js_files.get("button"):
-            js_files["button"] += ",\n\t" + js_extra_file
-        elif js_extra_file:
-            js_files["button"] += js_extra_file
-        if not self._settings.get("custom_button_mode"):
-            for file_name, data in js_files.items():
-                if data:
-                    js_files[file_name] = "toolbar_buttons.toolbar_button_loader(toolbar_buttons, {\n\t%s\n});\n" % data
-            if not self._settings.get("restartless"):
-                for file_name, data in self._button_js_setup.items():
-                    end = """\nwindow.addEventListener("load", function toolbarButtonsOnLoad() {\n\twindow.removeEventListener("load", toolbarButtonsOnLoad, false);\n\t%s\n}, false);""" % "\n\t".join(data.values())
-                    if file_name in js_files:
-                        js_files[file_name] += end
-                    else:
-                        js_files[file_name] = end
+    def create_options_js(self, detect_dependency, externals, function_match,
+                          javascript_info):
+        js_options_include = set()
         if self._button_options_js:
-            extra_javascript = []
             for options in self._button_options.values():
                 for option in options:
-                    js_options_include.update(detect_dependency.findall(option.xul))
-            for button, value in self._button_options_js.items():
-                # TODO: dependency resolution is not enabled here yet
+                    js_options_include.update(
+                        detect_dependency.findall(option.xul))
+            for button_id, value in self._button_options_js.items():
                 js_options_include.update(detect_dependency.findall(value))
-                js_functions = function_match.findall(value)
-                self._button_options_js[button] = ",\n".join(js_functions)
-                extra_javascript.append(multi_line_replace.sub("\n",
-                                        function_match.sub("", value).strip()))
-            self._button_options_js.update(dict((name, function) for name, function
-                               in externals.items() if name in js_options_include))
-            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "option.js")) as option_fp:
-                js_files["option"] = (option_fp.read()
-                    % ("\n\t".join(",\n".join(val for val in self._button_options_js.values() if val).split("\n")), "\n".join(extra_javascript)))
-        interfaces_file = os.path.join(self._settings.get('project_root'), 'files', 'interfaces')
-        if not os.path.isfile(interfaces_file):
-            interfaces_file = os.path.join(self._settings.get('button_sdk_root'), 'templates', 'interfaces')
-        interfaces = {}
-        with open(interfaces_file, "r") as interfaces_data:
-            for line in interfaces_data:
-                name, _ = line.split(":")
-                interfaces[name] = line.strip()
+                functions, extra = self.re_groups(value, function_match)
+                javascript_info["option"].functions.extend(functions)
+                javascript_info["option"].extra.extend(extra)
+            self.add_dependencies(detect_dependency, externals,
+                                  javascript_info["option"].functions,
+                                  js_options_include)
+
+    def get_js_files(self):
+        javascript_object = self._settings.get("javascript_object")
+
+        interface_match = re.compile(
+            r"(?<={}.interfaces.)[a-zA-Z]*".format(javascript_object))
+        function_match = re.compile(
+            r"^[a-zA-Z0-9_]*\s*:\s*(?:function\([^\)]*\)\s*)?\{.*?^\}[^\n]*",
+            re.MULTILINE | re.DOTALL)
+        detect_dependency = re.compile(
+            r"(?<={}.)[a-zA-Z]*".format(javascript_object))
+
+        template = self.env.get_template("button.js")
+
+        js_files = defaultdict(str)
+        javascript_info = defaultdict(lambda: JavascriptInfo([], [], []))
+
+        js_imports = self.get_js_imports()
+        externals = self.get_library_functions()
+        interfaces = self.get_interfaces()
+
+        # we look though the XUL for functions first
+        for file_name, values in self._button_xul.items():
+            for button, xul in values.items():
+                js_imports.update(detect_dependency.findall(xul))
+
+        def add_extra(file_name, button_id, extra):
+            self._button_js_setup[file_name][button_id] = "\n\t".join(extra)
+            if not self._settings.get("restartless"):
+                javascript_info[file_name].extra.extend(extra)
+
+        for file_name, js in self._button_js.items():
+            for button_id, value in js.items():
+                js_imports.update(detect_dependency.findall(value))
+                functions, extra = self.re_groups(value, function_match)
+                javascript_info[file_name].functions.extend(functions)
+                add_extra(file_name, button_id, extra)
+            if self._settings.get("menuitems"):
+                add_extra(file_name, "_menu_hider", [javascript_object + ".setUpMenuShower(document);"])
+
+        self.add_dependencies(detect_dependency, externals,
+                              javascript_info["button"].functions, js_imports)
+        self.create_options_js(detect_dependency, externals, function_match,
+                               javascript_info)
+
         js_global_interfaces = set(interface_match.findall(js_files["button"]))
-        for js_file, js_data in js_files.items():
-            self._properties_strings.update(string_match.findall(js_data))
-            js_interfaces = set(interface_match.findall(js_data))
-            if js_interfaces:
-                lines = []
-                interfaces_list = sorted(interfaces.items(), key=lambda x: x[0].lower())
-                for interface, constructor in interfaces_list:
+        for js_file, js_info in javascript_info.items():
+            for js_data in js_info.functions:
+                self._properties_strings.update(string_match.findall(js_data))
+                js_interfaces = set(interface_match.findall(js_data))
+                for interface, constructor in interfaces.items():
                     if (interface in js_interfaces
                         and (interface not in js_global_interfaces
                              or js_file == "button")):
-                        lines.append(constructor)
-                if lines:
-                    if not self._settings.get("custom_button_mode"):
-                        js_files[js_file] = ("toolbar_buttons.toolbar_button_loader("
-                                       "toolbar_buttons.interfaces, {\n\t%s\n});\n%s"
-                                     % (",\n\t".join(lines).replace("{{pref_root}}", self._settings.get("pref_root")), js_files[js_file]))
-                    else:
-                        self._interfaces[js_file] = ",\n\t".join(lines)
-            js_files[js_file] = js_files[js_file].replace("{{chrome_name}}",
-                    self._settings.get("chrome_name")).replace("{{pref_root}}",
-                    self._settings.get("pref_root")).replace("{{locale_file_prefix}}",
-                    self._settings.get("locale_file_prefix"))
-        js_files = dict((key, value) for key, value in js_files.items() if value)
+                        javascript_info[js_file].interfaces.append(constructor)
+            functions = (func.replace('\n', '\n\t') for func in js_info.functions)
+            js_string = template.render(
+                interfaces=sorted(js_info.interfaces),
+                functions=sorted(functions),
+                extra=js_info.extra,
+                javascript_object=javascript_object
+            )
+            if js_string.strip():
+                js_files[js_file] = self.string_subs(js_string)
         if js_files:
-            self._has_javascript = True
-            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "loader.js"), "r") as loader:
+            with open(self.find_file("loader.js"), "r") as loader:
                 js_files["loader"] = loader.read()
+            self._has_javascript = True
         return js_files
 
     def get_properties_strings(self):
@@ -785,7 +807,7 @@ class Button(SimpleButton):
             root.attrib['id'] = "%s-menu-item" % button_id
             root.attrib['class'] = "menu-iconic menuitem-iconic %s" % (root.attrib.get('class')
                         .replace('toolbarbutton-1 chromeclass-toolbar-additional', ''))
-            if not len(root) and "toolbar_buttons.showAMenu" in root.attrib.get('oncommand', ''):
+            if not len(root) and ".showAMenu" in root.attrib.get('oncommand', ''):
                 root.attrib["showamenu"] = "true"
                 ET.SubElement(root, "menupopup")
             if self._settings.get("use_keyboard_shortcuts") and button_id in self._button_keys:

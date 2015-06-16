@@ -46,7 +46,7 @@ class OverlayButton(Button):
             yield chrome_string
         defaults =  self.get_defaults()
         if defaults:
-            yield ChromeString(file_name=os.path.join("defaults", "preferences", "toolbar_buttons.js"), data=defaults)
+            yield ChromeString(file_name=os.path.join("defaults", "preferences", "defaultprefs.js"), data=defaults)
 
     def locale_files(self, button_locales, *args, **kwargs):
         dtd_data = button_locales.get_dtd_data(self.get_locale_strings(),
@@ -79,6 +79,7 @@ class OverlayButton(Button):
         return strings
 
     def _create_menu(self, file_name, buttons):
+        javascript_object = self._settings.get("javascript_object")
         if not self._settings.get('menuitems'):
             return ''
         menu_id, menu_label, location = self._settings.get("menu_meta")
@@ -96,7 +97,7 @@ class OverlayButton(Button):
             menu = ET.Element("menu", {"insertafter": insert_after, "id": menu_id, "label": "&%s;" % menu_label })
             menupopup.attrib.update({
                 "sortable": "true",
-                "onpopupshowing": "toolbar_buttons.sortMenu(event, this); toolbar_buttons.handelMenuLoaders(event, this);",
+                "onpopupshowing": "{0}.sortMenu(event, this); {0}.handelMenuLoaders(event, this);".format(javascript_object),
                 "id": "%s-popup" % menu_id,
             })
             menu.append(menupopup)
