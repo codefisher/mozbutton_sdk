@@ -18,7 +18,7 @@
 								<em:updateLink>{{ update_url }}</em:updateLink>
 							</rdf:Description>
 						</em:targetApplication>
-						{% endfor }}
+						{% endfor %}
 					</rdf:Description>
 				</rdf:li>
 			</rdf:Seq>
