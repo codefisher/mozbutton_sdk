@@ -137,6 +137,7 @@ class SimpleButton(object):
                         name, _, value = line.strip().partition("=")
                         if name:
                             self._strings[name] = value
+            self._strings["extension.name"] = self._settings.get("name")
                             
     def __len__(self):
         return len(self._buttons)

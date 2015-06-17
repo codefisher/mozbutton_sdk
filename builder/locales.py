@@ -7,7 +7,7 @@ from collections import defaultdict
 import codecs
 from lxml import etree
 
-ampersand_fix = re.compile(r'&(?![A-Za-z]+[0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;)')
+ampersand_fix = re.compile(r'&(?![A-Za-z]+[0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;|[A-Za-z\.]+;)')
 
 
 class Locale(object):

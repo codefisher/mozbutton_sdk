@@ -299,7 +299,8 @@ class Button(SimpleButton):
         """
         locale_match = re.compile("&([a-zA-Z0-9.-]*);")
         strings = list(self._option_titles)
-        strings.append("options.window.title")
+        strings.append("options.title")
+        strings.append("extension.name")
         for options in self._button_options.values():
             for option in options:
                 strings.extend(locale_match.findall(option.xul))
