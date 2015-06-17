@@ -8,7 +8,7 @@
 <?xml-stylesheet href="chrome://{{chrome_name}}/skin/button.css" type="text/css"?>
 <prefwindow id="tbutton-options"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-	persist="screenX screenY" title="&options.window.title;" >
+	persist="screenX screenY" title="&options.title;" >
 	{%- for title, panel in panels %}
 	<prefpane id="prefpane-{{panel.panel_id}}"
 			  image="chrome://{{chrome_name}}/skin/option/{{panel.icon}}"
