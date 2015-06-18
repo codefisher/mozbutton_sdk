@@ -252,15 +252,36 @@ class RestartlessButton(Button):
                 "onBeforeCreated": 'function (document) {\n\t\t\t\tvar window = document.defaultView;\n\t\t\t\t%s\n\t\t\t}' % "\n\t\t\t\t".join(children),
             }
         elif 'usepanelview' in root.attrib:
-            self._ui_ids.add("%s-panel-view" % root.attrib["id"])
+            self._ui_ids.add("{0}-panel-view".format(root.attrib["id"]))
+            root.attrib["onclick"] = """if(event.target != event.currentTarget || event.button != 0) {{
+					return;
+				}}
+				var item = event.target;
+				if(item.getAttribute('cui-areatype') == 'menu-panel') {{
+					var win = item.ownerDocument.defaultView;
+					event.preventDefault();
+					event.stopPropagation();
+					win.PanelUI.showSubView('{0}-panel-view', item, CustomizableUI.AREA_PANEL);
+				}}""".format(root.attrib["id"])
+            if 'type' not in root.attrib:
+                root.attrib["onclick"] += """ else {
+					event.target.firstChild.openPopup(event.target, "after_start");
+				}"""
             statements, _, _ = self._create_dom(root)
             root_clone = deepcopy(root)
+            popup = root_clone[0]
             if root.attrib['usepanelview'] == 'button-menu':
                 del root_clone.attrib["type"]
-                root_clone[0].insert(0, ET.Element("menuseparator"))
-                root_clone[0].insert(0, ET.Element("menuitem", root_clone.attrib))
-            for node in root_clone[0]:
+                popup.insert(0, ET.Element("menuseparator"))
+                popup.insert(0, ET.Element("menuitem", root_clone.attrib))
+            for node in popup:
                 node.attrib['class'] = 'subviewbutton'
+            if 'onpopupshowing' in popup.attrib:
+                popup.attrib['onViewShowing'] = popup.attrib['onpopupshowing']
+                del popup.attrib['onpopupshowing']
+            if 'onpopuphiding' in popup.attrib:
+                popup.attrib['onViewHiding'] = popup.attrib['onpopuphiding']
+                del popup.attrib['onpopuphiding']
             _, _, children = self._create_dom(root_clone, child_parent="popupset", rename={'menuitem': 'toolbarbutton'}, append_children=False)
             children.pop(0)
             data = {
