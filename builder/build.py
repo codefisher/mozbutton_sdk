@@ -108,7 +108,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
         else:
             description = "A customized version of {} including the buttons: {}"
             settings["description"] = description.format(
-                settings["name"], ", ".join(labels))
+                settings["name"], u", ".join(labels))
 
     options = buttons.get_options()
     for file, data in options.items():
