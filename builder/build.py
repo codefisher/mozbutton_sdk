@@ -106,7 +106,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
             if not settings.get("icon"):
                 settings["icon"] = buttons.get_icons(button)
         else:
-            description = "A customized version of {} including the buttons: {}"
+            description = u"A customized version of {} including the buttons: {}"
             settings["description"] = description.format(
                 settings["name"], u", ".join(labels))
 
