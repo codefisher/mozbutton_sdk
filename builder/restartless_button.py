@@ -424,7 +424,6 @@ class RestartlessButton(Button):
             if self._settings.get("menuitems") and menu:
                 end.add(javascript_object + ".setUpMenuShower(document);")
             extra_ui = self.create_extra_ui(file_name, values)
-            print list(self.jsm_keyboard_shortcuts(file_name))
             result[file_name] = template.render(
                 modules=modules_import,
                 locale_file_prefix=self._settings.get("locale_file_prefix"),
