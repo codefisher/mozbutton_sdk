@@ -28,7 +28,8 @@ function loadIntoWindow(window) {
 		for (var i = 0, len = styleSheets.length; i < len; i++) {
 			try {
 				window.QueryInterface(Ci.nsIInterfaceRequestor)
-					.getInterface(Ci.nsIDOMWindowUtils).loadSheet(styleSheets[i], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
+					.getInterface(Ci.nsIDOMWindowUtils)
+					.loadSheet(styleSheets[i], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
 			} catch(e) {
 				// throws error is there had been an unclean shutdown and the sheet is still loaded
 			}
@@ -45,14 +46,17 @@ function loadIntoWindow(window) {
 				}
 				mod.loadButtons(window);
 			} catch(e) {
-				window.console.log(e);
+				log(e);
 			}
 		}
 	}
 	if(uri == 'chrome://global/content/customizeToolbar.xul') {
 		for (var j = 0, len = styleSheets.length; j < len; j++) {
-			window.QueryInterface(Ci.nsIInterfaceRequestor)
-				.getInterface(Ci.nsIDOMWindowUtils).loadSheet(styleSheets[j], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
+			try {
+				window.QueryInterface(Ci.nsIInterfaceRequestor)
+					.getInterface(Ci.nsIDOMWindowUtils)
+					.loadSheet(styleSheets[j], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
+			} catch (e) {}
 		}
 	}
 }
@@ -63,7 +67,8 @@ function unloadFromWindow(window) {
 	if(modules) {
 		for (let i = 0, len = styleSheets.length; i < len; i++) {
 			window.QueryInterface(Ci.nsIInterfaceRequestor)
-				.getInterface(Ci.nsIDOMWindowUtils).removeSheet(styleSheets[i], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
+				.getInterface(Ci.nsIDOMWindowUtils)
+				.removeSheet(styleSheets[i], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
 		}
 		for(var i = 0; i < modules.length; i++) {
 			try {
@@ -73,14 +78,17 @@ function unloadFromWindow(window) {
 					mod.unloadButtons(window);
 				}
 			} catch(e) {
-				window.console.log(e);
+				log(e);
 			}
 		}
 	}
 	if(uri == 'chrome://global/content/customizeToolbar.xul') {
 		for (var i = 0, len = styleSheets.length; i < len; i++) {
-			window.QueryInterface(Ci.nsIInterfaceRequestor)
-				.getInterface(Ci.nsIDOMWindowUtils).removeSheet(styleSheets[i], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
+			try {
+				window.QueryInterface(Ci.nsIInterfaceRequestor)
+					.getInterface(Ci.nsIDOMWindowUtils)
+					.removeSheet(styleSheets[i], Ci.nsIDOMWindowUtils.AUTHOR_SHEET);
+			} catch(e) {}
 		}
 	}
 }
@@ -88,7 +96,8 @@ function unloadFromWindow(window) {
 var windowListener = {
 	onOpenWindow: function(aWindow) {
 		// Wait for the window to finish loading
-		let domWindow = aWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowInternal || Ci.nsIDOMWindow);
+		let domWindow = aWindow.QueryInterface(Ci.nsIInterfaceRequestor)
+			.getInterface(Ci.nsIDOMWindowInternal || Ci.nsIDOMWindow);
 		domWindow.addEventListener("load", function onLoad() {
 			domWindow.removeEventListener("load", onLoad, false);
 			loadIntoWindow(domWindow);
@@ -169,6 +178,9 @@ function uninstall(data, reason) {
 }
 
 function log(e) {
+	try {
+		Components.utils.reportError(e);
+	} catch(x) {}
 	Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService).logStringMessage(e);
 }
 

@@ -331,7 +331,7 @@ class RestartlessButton(Button):
             if self._button_js_setup.get(js_file, {}).get(button_id):
                 data["onCreated"] = "function(aNode){\n\t\t\tvar document = aNode.ownerDocument;\n\t\t\t%s\n\t\t}" % self._button_js_setup[js_file][button_id]
         items = sorted(data.items(), key=self._attr_key)
-        return "\n\ttry{\n\t\tCustomizableUI.createWidget({\n\t\t\t%s\n\t\t});\n\t} catch(e) {}\n" % ",\n\t\t\t".join("%s: %s" % (key, value) for key, value in items)
+        return "CustomizableUI.createWidget({\n\t\t\t%s\n\t\t});" % ",\n\t\t\t".join("%s: %s" % (key, value) for key, value in items)
 
     def _apply_toolbox(self, file_name, data):
         toolbox_info = self._settings.get("file_to_toolbar_box2").get(file_name)
@@ -380,7 +380,7 @@ class RestartlessButton(Button):
             if self._button_js_setup.get(js_file, {}).get(button_id):
                 data["onCreated"] = "function(aNode) {\n\t\t\t\tvar document = aNode.ownerDocument;\n\t\t\t\t%s\n\t\t\t}" % self._button_js_setup[js_file][button_id]
         items = sorted(data.items(), key=self._attr_key)
-        result = "\n\ttry{\n\t\tCustomizableUI.createWidget({\n\t\t\t%s\n\t\t});\n\t} catch(e) {}\n" % ",\n\t\t\t".join("%s: %s" % (key, value) for (key, value) in items)
+        result = "CustomizableUI.createWidget({\n\t\t\t%s\n\t\t});" % ",\n\t\t\t".join("%s: %s" % (key, value) for (key, value) in items)
         return result
 
     def get_jsm_files(self):
@@ -391,7 +391,7 @@ class RestartlessButton(Button):
         javascript_object = self._settings.get("javascript_object")
 
         for file_name, values in self._button_xul.items():
-            jsm_file = []
+            jsm_buttons = []
             js_includes = [js_file for js_file in self._get_js_file_list(file_name)
                            if js_file != "loader" and js_file in self._included_js_files]
             toolbars, toolbar_ids = self._create_jsm_toolbar(button_hash, toolbar_template, file_name, values)
@@ -402,9 +402,9 @@ class RestartlessButton(Button):
                 modules.update(self._modules[button_id])
                 attr = root.attrib
                 if not len(root) and not set(attr.keys()).difference(simple_attrs) and (not "class" in attr or attr["class"] == "toolbarbutton-1 chromeclass-toolbar-additional"):
-                    jsm_file.append(self._create_jsm_button(button_id, root, file_name, count, toolbar_ids))
+                    jsm_buttons.append(self._create_jsm_button(button_id, root, file_name, count, toolbar_ids))
                 else:
-                    jsm_file.append(self._create_dom_button(button_id, root, file_name, count, toolbar_ids))
+                    jsm_buttons.append(self._create_dom_button(button_id, root, file_name, count, toolbar_ids))
                 count += 1
             default_mods = {
                 "resource://gre/modules/Services.jsm",
@@ -437,7 +437,7 @@ class RestartlessButton(Button):
                 menu=menu,
                 keys=list(self.jsm_keyboard_shortcuts(file_name)),
                 end="\n\t".join(end),
-                buttons="\n\n".join(jsm_file),
+                buttons=jsm_buttons,
                 extra_ui=extra_ui,
                 pref_root=self._settings.get("pref_root"),
                 chrome_name=self._settings.get("chrome_name")

@@ -52,7 +52,11 @@ function setupButtons() {
 	{%- endfor %}
 	// All these get wrapped in a try catch in case there is another button
 	// with the same ID, which would throw an error.
-	{{buttons}}
+	{%- for button in buttons %}
+	try {
+		{{ button }}
+	} catch(e) {}
+	{%- endfor %}
 }
 
 function loadButtons(window) {
@@ -265,5 +269,8 @@ function observeToolbar(window, document, toolbar_id) {
 }
 
 function log(e) {
+	try {
+		Components.utils.reportError(e);
+	} catch(x) {}
 	Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService).logStringMessage(e);
 }
