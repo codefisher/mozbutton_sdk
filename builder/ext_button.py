@@ -30,7 +30,7 @@ Option = namedtuple('Option', ['firstline', 'xul'])
 OptionPanel = namedtuple('OptionPanel', ['options', 'icon', 'panel_id'])
 ChromeString = namedtuple('ChromeString', ['file_name', 'data'])
 ChromeFile = namedtuple('ChromeFile', ['file_name', 'path'])
-JavascriptInfo = namedtuple('JavascriptInfo', ['interfaces', 'functions', 'extra'])
+JavascriptInfo = namedtuple('JavascriptInfo', ['interfaces', 'functions', 'extra', 'modules'])
 
 string_match = re.compile(r"StringFromName\(\"([a-zA-Z0-9.-]*?)\"")
 
@@ -667,6 +667,7 @@ class Button(SimpleButton):
                 for option in options:
                     js_options_include.update(
                         detect_dependency.findall(option.xul))
+            javascript_info["option"].modules.extend(chain.from_iterable(self._modules.values()))
             for button_id, value in self._button_options_js.items():
                 js_options_include.update(detect_dependency.findall(value))
                 functions, extra = self.re_groups(value, function_match)
@@ -690,7 +691,7 @@ class Button(SimpleButton):
         template = self.env.get_template("button.js")
 
         js_files = defaultdict(str)
-        javascript_info = defaultdict(lambda: JavascriptInfo([], [], []))
+        javascript_info = defaultdict(lambda: JavascriptInfo([], [], [], []))
 
         js_imports = self.get_js_imports()
         externals = self.get_library_functions()
@@ -735,6 +736,7 @@ class Button(SimpleButton):
                 interfaces=sorted(js_info.interfaces),
                 functions=sorted(functions),
                 extra=js_info.extra,
+                modules=js_info.modules,
                 javascript_object=javascript_object
             )
             if js_string.strip():
