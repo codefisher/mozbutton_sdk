@@ -256,7 +256,7 @@ class RestartlessButton(Button):
             }
         elif 'usepanelview' in root.attrib:
             self._ui_ids.add("{0}-panel-view".format(root.attrib["id"]))
-            root.attrib["onclick"] = """if(event.target != event.currentTarget || event.button != 0) {{
+            root.attrib["onclick"] = """if(event.target != event.currentTarget || ('button' in event && event.button != 0)) {{
 					return;
 				}}
 				var item = event.target;
@@ -444,6 +444,7 @@ class RestartlessButton(Button):
                 end="\n\t".join(end),
                 buttons=jsm_buttons,
                 extra_ui=extra_ui,
+                javascript_object=self._settings.get("javascript_object"),
                 pref_root=self._settings.get("pref_root"),
                 chrome_name=self._settings.get("chrome_name")
             )
