@@ -128,32 +128,35 @@ class RestartlessButton(Button):
     def _jsm_create_menu(self, file_name, buttons):
         if not self._settings.get('menuitems'):
             return ''
-        menu_id, menu_label, location = self._settings.get("menu_meta")
         statements = []
         data = self.create_menu_dom(file_name, buttons)
         in_submenu = {button: menuitem for button, menuitem in data.items() if menuitem.parent_id is None}
         in_menu = {button: menuitem for button, menuitem in data.items() if menuitem.parent_id is not None}
         num = 0
-        meta = self._settings.get("file_to_menu").get(location, {}).get(file_name)
-        if in_submenu and meta:
-            with codecs.open(self.find_file("menu.js"), encoding='utf-8') as template_file:
-                template = template_file.read()
-            menu_name, insert_after = meta
-            statements.append(template % {
-                "menu_name": menu_name,
-                "menu_id": menu_id,
-                "label": menu_label,
-                "class": "menu-iconic",
-                "menu_label": menu_label,
-                "insert_after": insert_after
-            })
-            num += 3
-            for item, _, _ in in_submenu.values():
-                item_statements, count, _ = self._create_dom(item, top="menupopup_2", count=num, doc="document")
-                num = count + 1
-                statements.extend(item_statements)
+        if in_submenu:
+            menu_id, menu_label, location = self._settings.get("menu_meta")
+            meta = self._settings.get("file_to_menu").get(location, {}).get(file_name)
+            if meta:
+                with codecs.open(self.find_file("menu.js"),
+                                 encoding='utf-8') as template_file:
+                    template = template_file.read()
+                menu_name, insert_after = meta
+                statements.append(template % {
+                    "menu_name": menu_name,
+                    "menu_id": menu_id,
+                    "label": menu_label,
+                    "class": "menu-iconic",
+                    "menu_label": menu_label,
+                    "insert_after": insert_after
+                })
+                num += 3
+                for item, _, _ in in_submenu.values():
+                    item_statements, count, _ = self._create_dom(
+                        item, top="menupopup_2", count=num, doc="document")
+                    num = count + 1
+                    statements.extend(item_statements)
         for item, menu_name, insert_after in in_menu.values():
-            statements.append("var menupopup_%s = document.getElementById('%s');" % (num, menu_name))
+            statements.append("var menupopup_{0} = document.getElementById('{1}');".format(num, menu_name))
             var_name = "menupopup_%s" % num
             num += 1
             item.attrib["insertafter"] = insert_after
@@ -403,7 +406,12 @@ class RestartlessButton(Button):
                 else:
                     jsm_file.append(self._create_dom_button(button_id, root, file_name, count, toolbar_ids))
                 count += 1
-            modules_import = "\n" + "\n".join("try { Cu.import('%s'); } catch(e) {}" % mod for mod in modules if mod)
+            default_mods = {
+                "resource://gre/modules/Services.jsm",
+                "resource:///modules/CustomizableUI.jsm",
+                "resource://services-common/stringbundle.js"
+            }
+            modules_import = "\n".join("try { Cu.import('%s'); } catch(e) {}" % mod for mod in modules if mod and mod not in default_mods)
             if self._settings.get("menu_meta"):
                 menu_id, menu_label, _ = self._settings.get("menu_meta")
             else:
@@ -416,6 +424,7 @@ class RestartlessButton(Button):
             if self._settings.get("menuitems") and menu:
                 end.add(javascript_object + ".setUpMenuShower(document);")
             extra_ui = self.create_extra_ui(file_name, values)
+            print list(self.jsm_keyboard_shortcuts(file_name))
             result[file_name] = template.render(
                 modules=modules_import,
                 locale_file_prefix=self._settings.get("locale_file_prefix"),
@@ -427,7 +436,7 @@ class RestartlessButton(Button):
                 ui_ids=json.dumps(list(self._ui_ids)),
                 toolbox=self._settings.get("file_to_toolbar_box").get(file_name, ('', ''))[1],
                 menu=menu,
-                keys=self.jsm_keyboard_shortcuts(file_name),
+                keys=list(self.jsm_keyboard_shortcuts(file_name)),
                 end="\n\t".join(end),
                 buttons="\n\n".join(jsm_file),
                 extra_ui=extra_ui,
