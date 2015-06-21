@@ -78,6 +78,7 @@ config = {
     "extended_buttons": False,
     # make the extension use the bootstrap.js and be restartless
     "restartless": False,
+    "unpack": False,
 
     # controls for the locales
     "default_locale": "en-US",
