@@ -264,12 +264,17 @@ class RestartlessButton(Button):
 					var win = item.ownerDocument.defaultView;
 					event.preventDefault();
 					event.stopPropagation();
+					item.ownerDocument.getElementById('{0}-panel-view').ownerButton = item;
 					win.PanelUI.showSubView('{0}-panel-view', item, CustomizableUI.AREA_PANEL);
 				}}""".format(root.attrib["id"])
             if 'type' not in root.attrib:
-                root.attrib["onclick"] += """ else {
+                popup_opener = """ else {
 					event.target.firstChild.openPopup(event.target, "after_start");
 				}"""
+                if 'oncommand' not in root.attrib:
+                    root.attrib["oncommand"] = root.attrib["onclick"] + popup_opener
+                else:
+                    root.attrib["onclick"] += popup_opener
             statements, _, _ = self._create_dom(root)
             root_clone = deepcopy(root)
             popup = root_clone[0]
