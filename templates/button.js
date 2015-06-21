@@ -1,4 +1,7 @@
-{% if interfaces -%}
+{% for mod in modules -%}
+try { Cu.import('{{ mod }}'); } catch(e) {}
+{% endfor %}
+{%- if interfaces -%}
 {{javascript_object}}.toolbar_button_loader({{javascript_object}}.interfaces, {
 	{{ interfaces|join(',\n\t') }}
 });

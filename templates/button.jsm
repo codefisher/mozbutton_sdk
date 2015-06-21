@@ -16,9 +16,8 @@ try {
 } catch(e) {
 	Cu.import("chrome://{{chrome_name}}/content/customizable.jsm");
 }
-
 Cu.import('resource://gre/modules/Services.jsm');
-Cu.import("resource://services-common/stringbundle.js");
+Cu.import('resource://services-common/stringbundle.js');
 {{modules}}
 
 var gShutDownFunctions = [];
@@ -65,8 +64,8 @@ function loadButtons(window) {
 	var extensionPrefs = Cc['@mozilla.org/preferences-service;1'].getService(Ci.nsIPrefService).getBranch("extension.tbutton.");
 	{{toolbars}}
 	registerToolbars(window, document, {{toolbar_ids}});
-	// we create the keys, then the menu items, so the menu items get connected to the keys
 	{%- if keys %}
+	// we create the keys, then the menu items, so the menu items get connected to the keys
 	var keyset = document.getElementById('mainKeyset');
 	if(!keyset) {
 		var keyset = document.createElement('keyset');
