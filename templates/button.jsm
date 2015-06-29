@@ -22,7 +22,7 @@ Cu.import('resource://services-common/stringbundle.js');
 
 var gShutDownFunctions = [];
 
-var toolbar_buttons = {
+var {{javascript_object}} = {
 	interfaces: {},
 	// the important global objects used by the extension
 	toolbar_button_loader: function(parent, child) {
@@ -157,6 +157,19 @@ function loadButtons(window) {
 	}
 	{% endfor %}
 	{{end}}
+	var dropdownWatcher = new toolbar_buttons.settingWatcher('{{pref_root}}menupopup.hide.', function(subject, topic, data) {
+		var button = document.getElementById(data);
+		if(!button) {
+			return;
+		}
+		var hide = extensionPrefs.getBoolPref("menupopup.hide." + data);
+		if(hide) {
+			button.removeAttribute('type');
+		} else {
+			button.setAttribute('type', 'menu-button');
+		}
+	});
+	dropdownWatcher.startup();
 }
 
 function createToolbar(doc, toolbox, attributes, name) {
