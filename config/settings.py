@@ -91,6 +91,8 @@ config = {
     "use_keyboard_shortcuts": False,
     "keyboard_custom_keys": {},
 
+    "extra_prefs": (),
+
     "output_folder": "extensions",
     "output_file": "%(chrome_name)s-%(version)s.xpi",
 
@@ -260,6 +262,9 @@ config = {
     "file_to_location": {
         "statusbar": {
             "suite_browser": ("statusbar", "status-bar", "component-bar", {"class": "taskbutton", "label": None})
+        },
+        "urlbar": {
+            "browser": ("textbox", "urlbar", "urlbar-stop-button", {"class": "chromeclass-toolbar-additional"})
         }
     }
 }

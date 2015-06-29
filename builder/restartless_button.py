@@ -260,6 +260,9 @@ class RestartlessButton(Button):
 					return;
 				}}
 				var item = event.target;
+				if(item.nodeName == 'key') {{
+					item = document.getElementById('{0}');
+				}}
 				if(item.getAttribute('cui-areatype') == 'menu-panel') {{
 					var win = item.ownerDocument.defaultView;
 					event.preventDefault();
@@ -269,7 +272,7 @@ class RestartlessButton(Button):
 				}}""".format(root.attrib["id"])
             if 'type' not in root.attrib:
                 popup_opener = """ else {
-					event.target.firstChild.openPopup(event.target, "after_start");
+					item.firstChild.openPopup(item, "after_start");
 				}"""
                 if 'oncommand' not in root.attrib:
                     root.attrib["oncommand"] = root.attrib["onclick"] + popup_opener
@@ -426,7 +429,7 @@ class RestartlessButton(Button):
             for js_file in set(self._get_js_file_list(file_name) + [file_name]):
                 if self._button_js_setup.get(js_file, {}):
                     end.update(self._button_js_setup[js_file].values())
-            if self._settings.get("menuitems") and menu:
+            if (self._settings.get("menuitems") and menu) or self._settings.get('location_placement'):
                 end.add(javascript_object + ".setUpMenuShower(document);")
             extra_ui = self.create_extra_ui(file_name, values)
             result[file_name] = template.render(

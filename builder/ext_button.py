@@ -206,14 +206,16 @@ class Button(SimpleButton):
             for first, data in options:
                 self.append_option(files, self._button_applications[button],
                                    first, self.string_subs(data))
-        if self._pref_list:
-            limit = [name + '.xul' for name in self._pref_list.keys()]
+        pref_list = dict(self.get_pref_list())
+        pref_root = self._settings.get('pref_root')
+        if pref_list:
+            limit = [name.replace(pref_root, '') + '.xul' for name in pref_list.keys()]
             pref_files = get_pref_folders(limit, self._settings)
             for file_name, name in zip(*pref_files):
                 with open(file_name, "r") as data_fp:
                     option = Option(data_fp.readline(), data_fp.read())
                 applications = set()
-                for button in self._pref_list[name[:-4]]:
+                for button in self._pref_list.get(name[:-4], self._buttons):
                     applications.update(self._button_applications[button])
                     self._button_options[file_name].append(option)
                 self.append_option(files, applications, option.firstline,
@@ -326,6 +328,8 @@ class Button(SimpleButton):
                 for button in self._buttons:
                     settings.append(("{}showamenu.{}-menu-item".format(pref_root, button), self._settings.get("default_show_menu_pref")))
         for name, value in self._preferences.items():
+            settings.append((pref_root + name, value))
+        for name, value in self._settings.get('extra_prefs', ()):
             settings.append((pref_root + name, value))
         return settings
 
@@ -597,8 +601,10 @@ class Button(SimpleButton):
             js_imports.add("sortMenu")
             js_imports.add("handelMenuLoaders")
             js_imports.add("setUpMenuShower")
-        if self._settings.get("use_keyboard_shortcuts"):
-            js_imports.add("settingWatcher")
+        if self._settings.get('location_placement'):
+            js_imports.add("setUpMenuShower")
+        #if self._settings.get("use_keyboard_shortcuts"):
+        js_imports.add("settingWatcher")
         if self._settings.get("include_toolbars"):
             js_imports.add("toggleToolbar")
         return js_imports
@@ -713,7 +719,7 @@ class Button(SimpleButton):
                 functions, extra = self.re_groups(value, function_match)
                 javascript_info[file_name].functions.extend(functions)
                 add_extra(file_name, button_id, extra)
-            if self._settings.get("menuitems"):
+            if self._settings.get("menuitems") or self._settings.get('location_placement'):
                 add_extra(file_name, "_menu_hider", [javascript_object + ".setUpMenuShower(document);"])
 
         self.add_dependencies(detect_dependency, externals,

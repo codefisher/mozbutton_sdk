@@ -63,12 +63,13 @@ def get_buttons(settings, cls=None):
     buttons = cls(button_folders, button_names, settings, applications)
     return buttons
 
-def build_extension(settings, output=None, project_root=None, button_locales=None):
+
+def create_objects(settings, button_locales=None):
     if os.path.join(settings.get("image_path")) is None:
-        print("Please set the image_path setting")
-        return
+        raise ExtensionConfigError("Please set the image_path setting")
     if button_locales is None:
-        locale_folders, locales = get_locale_folders(settings.get("locale"), settings)
+        locale_folders, locales = get_locale_folders(settings.get("locale"),
+                                                     settings)
         button_locales = Locale(settings, locale_folders, locales)
     else:
         button_locales = Locale.from_locale(settings, button_locales)
@@ -76,7 +77,12 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     buttons = get_buttons(settings)
     if len(buttons.buttons()) == 0:
         raise ExtensionConfigError("The selected config would have no buttons.")
-    
+    return button_locales, buttons, locales
+
+
+def build_extension(settings, output=None, project_root=None, button_locales=None):
+    button_locales, buttons, locales = create_objects(settings, button_locales)
+
     xpi_file_name = os.path.join(
         settings.get("project_root"),
         settings.get("output_folder"),
