@@ -4,7 +4,7 @@ import textwrap
 import time
 import os
 
-from builder.build import build_extension, apply_max_version
+from builder.build import build_extension, apply_max_version, ExtensionConfigError
 from builder.screenshot import create_screenshot
 from builder.util import apply_settings_files, get_svn_revision, get_git_revision, create_update_rdf
 
@@ -80,7 +80,10 @@ def main():
         for file in raw_input().split():
             lconfig = dict(config)
             apply_settings_files(lconfig, [file])
-            build_extension(lconfig)
+            try:
+                build_extension(lconfig)
+            except ExtensionConfigError as e:
+                print("Count not build {0}".format(file))
     elif "--screen-shot" in opts_table:
         if "--icons-per-row" in opts_table:
             config["icons_per_row"] = int(opts_table["--icons-per-row"])
