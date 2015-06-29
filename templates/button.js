@@ -15,5 +15,6 @@ try { Cu.import('{{ mod }}'); } catch(e) {}
 window.addEventListener("load", function {{javascript_object}}OnLoad() {
 	window.removeEventListener("load", {{javascript_object}}OnLoad, false);
 	{{ extra|join('\n\t') }}
+	window.sizeToContent();
 }, false);
 {%- endif %}
