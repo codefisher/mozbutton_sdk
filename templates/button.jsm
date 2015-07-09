@@ -40,7 +40,7 @@ var {{javascript_object}} = {
 	}
 
 };
-var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getService(Ci.mozIJSSubScriptLoader);
+var scriptLoader = Cc["@mozilla.org/moz/jssubscript-loader;1"].getService(Ci.mozIJSSubScriptLoader);
 var gScope = this;
 // the number at the end forces a reload of the properties file, since sometimes it it catched when we don't want
 var buttonStrings = new StringBundle("chrome://{{chrome_name}}/locale/{{locale_file_prefix}}button_labels.properties?time=" + Date.now().toString());
@@ -48,7 +48,7 @@ var buttonStrings = new StringBundle("chrome://{{chrome_name}}/locale/{{locale_f
 function setupButtons() {
 	var extensionPrefs = Cc['@mozilla.org/preferences-service;1'].getService(Ci.nsIPrefService).getBranch("{{pref_root}}");
 	{%- for script in scripts %}
-	loader.loadSubScript("chrome://{{chrome_name}}/content/{{script}}.js", gScope);
+	scriptLoader.loadSubScript("chrome://{{chrome_name}}/content/{{script}}.js", gScope);
 	{%- endfor %}
 	// All these get wrapped in a try catch in case there is another button
 	// with the same ID, which would throw an error.
@@ -287,3 +287,30 @@ function log(e) {
 	} catch(x) {}
 	Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService).logStringMessage(e);
 }
+
+/* this allows us to use jetpack modules in our code if we want */
+var { Loader } = Components.utils.import("resource://gre/modules/commonjs/toolkit/loader.js", {});
+var sdkLoader = Loader.Loader({
+  modules: {
+    "toolkit/loader": Loader
+  },
+  paths: {
+    "devtools": "resource:///modules/devtools/",
+    "sdk/": "resource://gre/modules/commonjs/sdk/",
+    "": "resource://gre/modules/commonjs/"
+  },
+  rootURI: '',
+  metadata: {
+    'permissions': {
+      'private-browsing': true
+    }
+  },
+  resolve: function(id, base) {
+    if (id == "chrome" || id.startsWith("@"))
+      return id;
+    return Loader.resolve(id, base);
+  }
+});
+
+var module = Loader.Module("main", "");
+var jetpack = Loader.Require(sdkLoader, module);

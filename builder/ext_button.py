@@ -226,9 +226,18 @@ class Button(SimpleButton):
         files, javascript = self.option_data()
         template = self.env.get_template('option.xul')
         result = {}
+        panel_order = self._settings.get('option_panel_order')
+        def sort_panels(item):
+            if item[0] in panel_order:
+                return panel_order.index(item[0])
+            else:
+                return len(panel_order)
         for application, panels in files.items():
+            panels = list(panels.items())
+            if panel_order:
+                panels = sorted(panels, key=sort_panels)
             result[application + "-options"] = template.render(
-                panels=panels.items(), javascript=javascript,
+                panels=panels, javascript=javascript,
                 chrome_name=self._settings.get("chrome_name"),
                 locale_file_prefix=self._settings.get("locale_file_prefix")
             )

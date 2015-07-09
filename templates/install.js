@@ -2,9 +2,9 @@
 	var prefs = prefService.getBranch("{{pref_root}}");
 	var version = "{{version}}";
 	var currentVersion = prefs.getCharPref("{{current_version_pref}}");
-	var url = "{{homepage_url}}updated/{{version}}/";
+	var url = "{{homepage}}updated/{{version}}/";
 	if(currentVersion == "") {
-		url = "{{homepage_url}}installed/{{version}}/";
+		url = "{{homepage}}installed/{{version}}/";
 	}
 	if(currentVersion != version) {
 		prefs.setCharPref("{{current_version_pref}}", version);
