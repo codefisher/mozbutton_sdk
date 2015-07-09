@@ -21,6 +21,22 @@ class RestartlessButton(Button):
         super(RestartlessButton, self).__init__(*args, **kwargs)
         self._ui_ids = set()
         self._included_js_files = []
+        self._bootstrap_globals = []
+        self._bootstrap_startup = []
+        self._bootstrap_shutdown = []
+
+        for folder, button, files in self._info:
+            if "bootstrap" in files:
+                for file_name in os.listdir(os.path.join(folder, "bootstrap")):
+                    if file_name[0] != ".":
+                        with open(os.path.join(folder, "bootstrap", file_name), "r") as js_fp:
+                            data = js_fp.read()
+                        if file_name == "global.js":
+                            self._bootstrap_globals.append(data)
+                        elif file_name == "startup.js":
+                            self._bootstrap_startup.append(data)
+                        elif file_name == "shutdown.js":
+                            self._bootstrap_shutdown.append(data)
 
     def get_files(self):
         for file_name, data in self.get_jsm_files().items():
@@ -102,28 +118,28 @@ class RestartlessButton(Button):
         loaders = []
         resource = ""
         if self.resource_files:
-            resource = "createResource('%s', 'chrome://%s/content/resources/');" % (chrome_name, chrome_name)
-        install = ""
+            resource = "createResource('{0}', 'chrome://{0}/content/resources/');".format(chrome_name)
         window_modules = defaultdict(list)
         for file_name in self._button_files:
             for overlay in self._settings.get("files_to_window").get(file_name, ()):
                 window_modules[overlay].append(file_name)
 
         for overlay, modules in window_modules.items():
-                mods = "\n\t\t".join(["modules.push('chrome://%s/content/%s.jsm');" % (chrome_name, file_name) for file_name in modules])
-                loaders.append("(uri == '%s') {\n\t\t%s\n\t}" % (overlay, mods))
-        with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "bootstrap.js") ,"r") as f:
-            template = f.read()
+            mods = "\n\t\t".join(["modules.push('chrome://{0}/content/{1}.jsm');".format(chrome_name, file_name) for file_name in modules])
+            loaders.append("(uri == '{0}') {{\n\t\t{1}\n\t}}".format(overlay, mods))
         if self._settings.get("show_updated_prompt"):
-            with open(os.path.join(self._settings.get('button_sdk_root'), "templates", "install.js") ,"r") as f:
-                install = (f.read().replace("{{homepage_url}}", self._settings.get("homepage"))
-                                   .replace("{{version}}", self._settings.get("version"))
-                                   .replace("{{pref_root}}", self._settings.get("pref_root"))
-                                   .replace("{{current_version_pref}}", self._settings.get("current_version_pref")))
-        return (template.replace("{{chrome_name}}", self._settings.get("chrome_name"))
-                        .replace("{{resource}}", resource)
-                        .replace("{{install}}", install)
-                        .replace("{{loaders}}", "if" + " else if".join(loaders)))
+            install_template = self.env.get_template('bootstrap.js')
+            install = install_template.render(**self._settings)
+        else:
+            install = ""
+        template = self.env.get_template('bootstrap.js')
+        return template.render(
+            resource=resource, install=install,
+            globals=self.string_subs("\n".join(self._bootstrap_globals)),
+            startup=self.string_subs("\n".join(self._bootstrap_startup)),
+            shutdown=self.string_subs("\n".join(self._bootstrap_shutdown)),
+            loaders = "if" + " else if".join(loaders),
+            **self._settings)
 
     def _jsm_create_menu(self, file_name, buttons):
         if not self._settings.get('menuitems'):

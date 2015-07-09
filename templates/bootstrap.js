@@ -11,8 +11,9 @@ const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 var styleSheets = [Services.io.newURI("chrome://{{chrome_name}}/skin/button.css", null, null)];
-
 var gModules = {};
+
+{{ globals }}
 
 function getModules(uri) {
 	var modules = [];
@@ -131,6 +132,8 @@ function startup(data, reason) {
 	}
 	// Load into any new windows
 	wm.addListener(windowListener);
+
+	{{ startup }}
 }
 
 function shutdown(data, reason) {
@@ -168,6 +171,8 @@ function shutdown(data, reason) {
 	}
 	gModules = {};
 	Cu.unload("chrome://{{chrome_name}}/content/customizable.jsm");
+
+	{{ shutdown }}
 }
 
 function install(data, reason) {
@@ -224,3 +229,54 @@ function setUCharPref(prefName, text, branch) {
 	branch = branch ? branch : Services.prefs;
 	branch.setComplexValue(prefName, Ci.nsISupportsString, string);
 }
+
+function settingWatcher(pref, func) {
+	this.prefs = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch(pref);
+	this.prefs.QueryInterface(Ci.nsIPrefBranch2);
+
+	var observer = {
+		observe: function(subject, topic, data) {
+			if (topic != "nsPref:changed") {
+				return;
+			}
+			try {
+				func(subject, topic, data);
+			} catch(e) {} // button might not exist
+		}
+	};
+
+	this.startup = function() {
+		this.prefs.addObserver("", observer, false);
+	};
+
+	this.shutdown = function() {
+		this.prefs.removeObserver("", observer);
+	};
+}
+
+/* this allows us to use jetpack modules in our code if we want */
+var { Loader } = Components.utils.import("resource://gre/modules/commonjs/toolkit/loader.js", {});
+var loader = Loader.Loader({
+  modules: {
+    "toolkit/loader": Loader
+  },
+  paths: {
+    "devtools": "resource:///modules/devtools/",
+    "sdk/": "resource://gre/modules/commonjs/sdk/",
+    "": "resource://gre/modules/commonjs/"
+  },
+  rootURI: '',
+  metadata: {
+    'permissions': {
+      'private-browsing': true
+    }
+  },
+  resolve: function(id, base) {
+    if (id == "chrome" || id.startsWith("@"))
+      return id;
+    return Loader.resolve(id, base);
+  }
+});
+
+var module = Loader.Module("main", "");
+var jetpack = Loader.Require(loader, module);
