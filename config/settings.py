@@ -74,6 +74,7 @@ config = {
     "translate_description": False,
     # load the extended_option.xul file
     "extra_options":False,
+    "option_panel_order": None,
     # use the more extended versions of some buttons
     "extended_buttons": False,
     # make the extension use the bootstrap.js and be restartless
