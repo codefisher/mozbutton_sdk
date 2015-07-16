@@ -336,9 +336,9 @@ class Button(SimpleButton):
             else:
                 for button in self._buttons:
                     settings.append(("{}showamenu.{}-menu-item".format(pref_root, button), self._settings.get("default_show_menu_pref")))
-        for name, value in self._preferences.items():
-            settings.append((pref_root + name, value))
-        for name, value in self._settings.get('extra_prefs', ()):
+        prefs = dict(self._preferences)
+        prefs.update(dict(self._settings.get('extra_prefs', ())))
+        for name, value in prefs.items():
             settings.append((pref_root + name, value))
         return settings
 
