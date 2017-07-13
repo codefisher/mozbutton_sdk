@@ -1,4 +1,5 @@
 import urllib
+import urllib.request
 
 try:
     from HTMLParser import HTMLParser
@@ -40,7 +41,11 @@ class AppVersionParser(HTMLParser):
 
 def get_app_versions():
     try:
-        data = urllib.urlopen(AMO_VERSION_PAGE).read()
+        try:
+            data = urllib.urlopen(AMO_VERSION_PAGE).read()
+        except AttributeError:
+            with urllib.request.urlopen(AMO_VERSION_PAGE) as url:
+                data = url.read()
     except IOError:
         return {}
     parser = AppVersionParser()
