@@ -45,7 +45,7 @@ def get_app_versions():
             data = urllib.urlopen(AMO_VERSION_PAGE).read()
         except AttributeError:
             with urllib.request.urlopen(AMO_VERSION_PAGE) as url:
-                data = url.read()
+                data = url.read().decode(url.info().get_content_charset())
     except IOError:
         return {}
     parser = AppVersionParser()
