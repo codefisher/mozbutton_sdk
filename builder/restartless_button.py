@@ -12,6 +12,11 @@ except ImportError:
 
 from builder.ext_button import Button, Option, ChromeString, ChromeFile
 
+try:
+    basestring
+except NameError:
+    basestring = str  # py3
+
 Keys = namedtuple("Keys", ['command', 'button'])
 ExtraUI = namedtuple("ExtraUI", ["parent", "parent_id", "index", "code", "after"])
 

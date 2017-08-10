@@ -8,6 +8,11 @@ from builder.button import get_image, RestartlessButton, OverlayButton, Button
 from builder.util import get_locale_folders, get_folders
 from builder.app_versions import get_app_versions
 
+try:
+    basestring
+except NameError:
+    basestring = str  # py3
+
 class ExtensionConfigError(Exception):
     pass
 
