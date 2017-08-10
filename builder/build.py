@@ -41,7 +41,13 @@ def get_buttons(settings, cls=None):
             applications = settings.get("applications").split('-')
     else:
         applications = settings.get("applications")
-    button_list = settings.get("buttons")
+    button_list = set()
+    buttons = settings.get("buttons", ())
+    if buttons:
+        button_list.update(buttons)
+    menuitems = settings.get("menuitems", ())
+    if menuitems:
+        button_list.update(menuitems)
     button_folders, button_names = [], []
     for name in settings.get("projects"):
         staging_button_folders, staging_buttons = get_folders(button_list, settings, name)
@@ -59,13 +65,15 @@ def get_buttons(settings, cls=None):
     elif not menuitems:
         settings["menuitems"] = ()
     elif "all" in menuitems:
+        if 'menuitems_sorted' not in settings:
+            settings["menuitems_sorted"] = True
         settings["menuitems"] = button_names
     buttons = cls(button_folders, button_names, settings, applications)
     return buttons
 
 
 def create_objects(settings, button_locales=None):
-    if os.path.join(settings.get("image_path")) is None:
+    if settings.get("image_path") is None:
         raise ExtensionConfigError("Please set the image_path setting")
     if button_locales is None:
         locale_folders, locales = get_locale_folders(settings.get("locale"),

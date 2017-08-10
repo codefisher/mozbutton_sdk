@@ -80,19 +80,23 @@ class OverlayButton(Button):
         menu_id, menu_label, location = self._settings.get("menu_meta")
         statements = []
         data = self.create_menu_dom(file_name, buttons)
-        in_submenu = {button: menuitem for button, menuitem in data.items() if menuitem.parent_id is None}
-        in_menu = [(menuitem.parent_id, menuitem) for button, menuitem in data.items()
+        in_submenu = [menuitem for menuitem in data if menuitem.parent_id is None]
+        in_menu = [(menuitem.parent_id, menuitem) for menuitem in data
                         if menuitem.parent_id is not None]
         meta = self._settings.get("file_to_menu").get(location, {}).get(file_name)
         if in_submenu and meta:
             menupopup = ET.Element("menupopup")
-            for item, _, _ in in_submenu.values():
+            for item, _, _ in in_submenu:
                 menupopup.append(item)
             menu_name, insert_after = meta
             menu = ET.Element("menu", {"insertafter": insert_after, "id": menu_id, "label": "&%s;" % menu_label })
+            if self._settings.get('menuitems_sorted'):
+                onpopupshowing = "{0}.sortMenu(event, this); {0}.handelMenuLoaders(event, this);".format(javascript_object)
+            else:
+                onpopupshowing = "{0}.handelMenuLoaders(event, this);".format(javascript_object)
             menupopup.attrib.update({
                 "sortable": "true",
-                "onpopupshowing": "{0}.sortMenu(event, this); {0}.handelMenuLoaders(event, this);".format(javascript_object),
+                "onpopupshowing": onpopupshowing,
                 "id": "%s-popup" % menu_id,
             })
             menu.append(menupopup)

@@ -146,32 +146,35 @@ class RestartlessButton(Button):
             return ''
         statements = []
         data = self.create_menu_dom(file_name, buttons)
-        in_submenu = {button: menuitem for button, menuitem in data.items() if menuitem.parent_id is None}
-        in_menu = {button: menuitem for button, menuitem in data.items() if menuitem.parent_id is not None}
+        in_submenu = [menuitem for menuitem in data if menuitem.parent_id is None]
+        in_menu = [menuitem for menuitem in data if menuitem.parent_id is not None]
         num = 0
+        template = self.env.get_template('menu.js')
         if in_submenu:
-            menu_id, menu_label, location = self._settings.get("menu_meta")
-            meta = self._settings.get("file_to_menu").get(location, {}).get(file_name)
-            if meta:
-                with codecs.open(self.find_file("menu.js"),
-                                 encoding='utf-8') as template_file:
-                    template = template_file.read()
-                menu_name, insert_after = meta
-                statements.append(template % {
-                    "menu_name": menu_name,
-                    "menu_id": menu_id,
-                    "label": menu_label,
-                    "class": "menu-iconic",
-                    "menu_label": menu_label,
-                    "insert_after": insert_after
-                })
-                num += 3
-                for item, _, _ in in_submenu.values():
-                    item_statements, count, _ = self._create_dom(
-                        item, top="menupopup_2", count=num, doc="document")
-                    num = count + 1
-                    statements.extend(item_statements)
-        for item, menu_name, insert_after in in_menu.values():
+            menu_id, menu_label, locations = self._settings.get("menu_meta")
+            if isinstance(locations, basestring):
+                locations = [locations]
+            for i, location in enumerate(locations):
+                menu_id_num = "{0}_{1}".format(menu_id, i) if i else menu_id
+                meta = self._settings.get("file_to_menu").get(location, {}).get(file_name)
+                if meta:
+                    menu_name, insert_after = meta
+                    statements.append(template.render(**{
+                        "menu_name": menu_name,
+                        "menu_id": menu_id_num,
+                        "label": menu_label,
+                        "class": "menu-iconic",
+                        "menu_label": menu_label,
+                        "insert_after": insert_after,
+                        "menuitems_sorted": self._settings.get("menuitems_sorted")
+                    }))
+                    num += 3
+                    for item, _, _ in in_submenu:
+                        item_statements, count, _ = self._create_dom(
+                            item, top="menupopup_2", count=num, doc="document")
+                        num = count + 1
+                        statements.extend(item_statements)
+        for item, menu_name, insert_after in in_menu:
             statements.append("var menupopup_{0} = document.getElementById('{1}');".format(num, menu_name))
             var_name = "menupopup_%s" % num
             num += 1

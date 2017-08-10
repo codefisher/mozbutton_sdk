@@ -8,7 +8,7 @@ from collections import defaultdict
 from itertools import chain
 from builder import grayscale
 from builder.util import get_pref_folders
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 import lxml.etree as ET
 from jinja2 import FileSystemLoader, Environment
 
@@ -24,6 +24,7 @@ except NameError:
     basestring = str  # py3
 
 Menuitem = namedtuple('Menuitem', ['node', 'parent_id', 'insert_after'])
+MenuLocation = namedtuple('MenuLocation', ['parent_id', 'insert_after'])
 Css = namedtuple('Css', ['selectors', 'declarations'])
 ImageBox = namedtuple('ImageBox', ['left', 'top', 'right', 'bottom'])
 Option = namedtuple('Option', ['firstline', 'xul'])
@@ -167,34 +168,46 @@ class Button(SimpleButton):
                     options=[data], icon=icon,
                     panel_id=title.replace('.', '-'))
 
+    def xul_menu_option(self, menu_placements, menu_id, menu_label, menu_option_template):
+        if isinstance(menu_placements, basestring):
+            menu_placements = [menu_placements]
+        for i, menu_placement in enumerate(menu_placements):
+            menu_id_num = "{0}_{1}".format(menu_id, i) if i else menu_id
+            label = self._settings.get('file_to_menu', {}).get(
+                        menu_placement, {}).get(
+                                        'setting_label', 'tb-show-a-menu.option.label')
+            xul = menu_option_template.render(
+                label=label,
+                menu_id=menu_id_num,
+                menu_label=menu_label,
+                **self._settings
+            )
+            # TODO: add filter for the application where the menu would be
+            self._button_options[menu_id_num].append(
+                Option("tb-show-a-menu.option.title:menu.png", xul))
+            self._button_applications[menu_id_num] = self._applications
+
     def create_menu_options(self):
         if self._settings.get("menuitems") and self._settings.get(
                 "menuitems_options"):
-            with open(self.find_file("show-menu-option.xul"),
-                      "r") as menu_option_file:
-                menu_option_template = menu_option_file.read()
+            menu_option_template = self.env.get_template("show-menu-option.xul")
             if self._settings.get(
                     "menu_placement") is None and self._settings.get(
                     "menu_meta"):
-                menu_id, menu_label, location = self._settings.get("menu_meta")
-                xul = self.format_string(menu_option_template,
-                                         menu_id=menu_id, menu_label=menu_label)
-                # TODO: add filter for the application where the menu would be
-                self._button_options[menu_id].append(
-                    Option("tb-show-a-menu.option.title:menu.png", xul))
-                self._button_applications[menu_id] = self._applications
+                menu_id, menu_label, menu_placement = self._settings.get("menu_meta")
+                self.xul_menu_option(menu_placement, menu_id, menu_label,
+                                             menu_option_template)
             else:
                 menu_placement = self._settings.get("menu_placement")
                 for button in self._buttons:
                     if button in self._settings.get("menuitems") or (type(
                             menu_placement) == dict and button in menu_placement):
-                        xul = self.format_string(menu_option_template,
-                                                 menu_id=button + "-menu-item",
-                                                 menu_label=button + ".label")
-                        self._button_options[button + "-menu-item"].append(
-                            Option("tb-show-a-menu.option.title:menu.png", xul))
-                        self._button_applications[
-                            "%s-menu-item" % button] = self._applications
+                        if type(menu_placement) == dict:
+                            menu_placement = menu_placement.get(button)
+                        menu_id = button + "-menu-item"
+                        menu_label = button + ".label"
+                        self.xul_menu_option(menu_placement, menu_id, menu_label,
+                                             menu_option_template)
 
     def option_data(self):
         javascript = []
@@ -331,8 +344,12 @@ class Button(SimpleButton):
             settings.append((pref_root + self._settings.get("current_version_pref"), "''"))
         if self._settings.get("menuitems"):
             if self._settings.get("menu_placement") is None and self._settings.get("menu_meta"):
-                menu_id, menu_label, location = self._settings.get("menu_meta")
-                settings.append(("{}showamenu.{}".format(pref_root, menu_id), self._settings.get("default_show_menu_pref")))
+                menu_id, menu_label, locations = self._settings.get("menu_meta")
+                if isinstance(locations, basestring):
+                    locations = [locations]
+                for i, location in enumerate(locations):
+                    menu_id_num = "{0}_{1}".format(menu_id, i) if i else menu_id
+                    settings.append(("{}showamenu.{}".format(pref_root, menu_id_num), self._settings.get("default_show_menu_pref")))
             else:
                 for button in self._buttons:
                     settings.append(("{}showamenu.{}-menu-item".format(pref_root, button), self._settings.get("default_show_menu_pref")))
@@ -607,7 +624,8 @@ class Button(SimpleButton):
     def get_js_imports(self):
         js_imports = set()
         if self._settings.get("menuitems"):
-            js_imports.add("sortMenu")
+            if self._settings.get('menuitems_sorted'):
+                js_imports.add("sortMenu")
             js_imports.add("handelMenuLoaders")
             js_imports.add("setUpMenuShower")
         if self._settings.get('location_placement'):
@@ -763,7 +781,7 @@ class Button(SimpleButton):
         return js_files
 
     def create_menu_dom(self, file_name, buttons):
-        data = {}
+        data = []
         menuitems = self._settings.get("menuitems")
         menu_placement = self._menu_placement(file_name, buttons)
         for button_id, xul in buttons.items():
@@ -784,11 +802,13 @@ class Button(SimpleButton):
                 root[0].insert(0, ET.Element("menuitem", root.attrib))
             root.attrib.pop("type", None)
             root.attrib.pop("tooltiptext", None)
-            placement = menu_placement.get(button_id)
-            if placement:
-                data[button_id] = Menuitem(root, *placement)
+            placements = menu_placement.get(button_id)
+            if placements:
+                for placement in placements:
+                    if placement:
+                        data.append(Menuitem(root, *placement))
             else:
-                data[button_id] = Menuitem(root, None, None)
+                data.append(Menuitem(root, None, None))
         return data
 
     @staticmethod
@@ -801,20 +821,29 @@ class Button(SimpleButton):
     def _menu_placement(self, file_name, buttons):
         menu_placement = self._settings.get("menu_placement")
         file_to_menu = self._settings.get("file_to_menu")
+        menuitems = self._settings.get("menuitems")
         if menu_placement is None:
-            result = {button: None for button in buttons}
+            return OrderedDict((button, [MenuLocation(None, None)])
+                                 for button in menuitems if button in buttons)
         elif isinstance(menu_placement, basestring):
             placement = file_to_menu.get(menu_placement).get(file_name)
             if placement is None:
-                result = {}
+                return {}
             else:
-                result = {button: placement for button in buttons}
+                return OrderedDict((button, [placement]) for button in menuitems if button in buttons)
         elif isinstance(menu_placement, dict):
-            result = {button: file_to_menu.get(menu_placement.get(button), {}).get(file_name)
-                      for button in buttons if button in menu_placement}
+            def get_placement(button):
+                placements = menu_placement.get(button)
+                if isinstance(placements, basestring):
+                    return [file_to_menu.get(placements, {}).get(file_name)]
+                else:
+                    return [file_to_menu.get(placement, {}).get(file_name) for placement in placements]
+            return OrderedDict((button, get_placement(button))
+                      for button in menuitems if button in buttons and button in menu_placement)
         else:
-            result = {button: menu_placement for button in buttons}
-        return result
+            placements = [file_to_menu.get(placement, {}).get(file_name) for placement in menu_placement]
+            return OrderedDict((button, placements)
+                                 for button in menuitems if button in buttons)
 
     def toolbar_count(self, include_setting, values, max_count):
         number = self._settings.get(include_setting)
