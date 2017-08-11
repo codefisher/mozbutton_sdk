@@ -12,6 +12,7 @@ try:
     basestring
 except NameError:
     basestring = str  # py3
+    unicode = str
 
 class ExtensionConfigError(Exception):
     pass
