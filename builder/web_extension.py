@@ -83,7 +83,8 @@ class WebExtensionButton(Button):
 
         for file_group, file_var in (
                 ('popup', self.popup_files),
-                ('option', self.option_files)):
+                ('option', self.option_files),
+                ('files', self.extra_files)):
             for name, path in file_var.items():
                 if name.endswith(".html"):
                     with open(path, 'r') as fp:
@@ -97,14 +98,15 @@ class WebExtensionButton(Button):
             path = get_image(settings, size, settings.get("icon"))
             yield (path, "icons/{}-{}".format(size, settings.get("icon")))
         for name, path in self.extra_files.items():
-            yield (path, os.path.join('files', name))
+            if not name.endswith('.xul') and not name.endswith('.html'):
+                yield (path, os.path.join('files', name))
         for name, path in self.popup_files.items():
             if not name.endswith(".html"):
                 yield (path, os.path.join('popup', name))
         for name, path in self.option_files.items():
             if not name.endswith(".html"):
                 yield (path, os.path.join('option', name))
-        if self.option_files or self.popup_files:
+        if self.option_files or self.popup_files or self.extra_files:
             yield os.path.join(settings.get('button_sdk_root'), 'templates', 'localise.js'), "localise.js"
 
     def locale_files(self, button_locales, *args, **kwargs):
@@ -122,7 +124,7 @@ class WebExtensionButton(Button):
                 strings.add(data.get('default_title'))
             if 'strings' in data:
                 strings.update(data.get('strings'))
-        for file_group in (self.popup_files, self.option_files):
+        for file_group in (self.popup_files, self.option_files, self.extra_files):
             for name, path in file_group.items():
                 if name.endswith('.html'):
                     with open(path, 'r') as fp:

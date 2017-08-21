@@ -1,6 +1,6 @@
 function localizeHtmlPage() {
 	//Localize by replacing __MSG_***__ meta tags
-	var objects = document.getElementsByTagName('html');
+	var objects = document.querySelectorAll('.message');
 	for (var j = 0; j < objects.length; j++) {
 		var obj = objects[j];
 
