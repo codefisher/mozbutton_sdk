@@ -4,7 +4,7 @@ import textwrap
 import time
 import os
 
-from builder.build import build_extension, apply_max_version, ExtensionConfigError
+from builder.build import build_extension, build_webextension, apply_max_version, ExtensionConfigError
 from builder.screenshot import create_screenshot
 from builder.util import apply_settings_files, get_svn_revision, get_git_revision, create_update_rdf
 
@@ -20,7 +20,7 @@ except NameError:
     raw_input = input
 
 def main():
-    opts, args = getopt.getopt(sys.argv[1:], "pvb:l:a:o:f:s:m:", 
+    opts, args = getopt.getopt(sys.argv[1:], "pvb:l:a:o:f:s:m:x:",
         ["help", "profile", "screen-shot", "icons-per-row=", "screen-shot-font=", 
             "git-revision", "lookup-max-versions", "svn-revision", "update-rdf="])
     opts_table = dict(opts)
@@ -28,7 +28,7 @@ def main():
         print(textwrap.dedent("""
         MozButton SDK
 
-            -b    - a button to inlcude
+            -b    - a button to include
             -a    - an application to include
             -l    - a locale to include
             -o    - the folder to put the created extension in
@@ -41,6 +41,7 @@ def main():
             -v --lookup-max-versions 
                   - do a web lookup of the latest application versions, and apply that to 
                     settings used to build the extension
+            -x make as a collection of web extensions
                     
             --git-revision       - add the git revision number to the version
             --svn-revision       - add the svn revision number to the version
@@ -100,6 +101,8 @@ def main():
         prof = pstats.Stats("./stats")
         prof.sort_stats('cumulative') # time, cumulative
         prof.print_stats()
+    if "-x" in opts_table:
+        build_webextension(config)
     else:
         build_extension(config)
     print(time.time() - start)

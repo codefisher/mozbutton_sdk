@@ -23,6 +23,9 @@ try:
 except NameError:
     basestring = str  # py3
 
+class ExtensionConfigError(Exception):
+    pass
+
 Menuitem = namedtuple('Menuitem', ['node', 'parent_id', 'insert_after'])
 MenuLocation = namedtuple('MenuLocation', ['parent_id', 'insert_after'])
 Css = namedtuple('Css', ['selectors', 'declarations'])
@@ -35,6 +38,13 @@ JavascriptInfo = namedtuple('JavascriptInfo', ['interfaces', 'functions', 'extra
 
 string_match = re.compile(r"StringFromName\(\"([a-zA-Z0-9.-]*?)\"")
 
+def bytes_string(string):
+    try:
+        if type(string) == unicode:
+            return str(string.encode("utf-8"))
+        return string
+    except:
+        return string.encode("utf-8")
 
 class Button(SimpleButton):
     def __init__(self, folders, buttons, settings, applications):
@@ -64,6 +74,7 @@ class Button(SimpleButton):
         self.has_options = False
         self._interfaces = {}
         self.locales_in_use = []
+        self._result_images = None
 
         loader = FileSystemLoader([
             os.path.join(self._settings.get('project_root'), 'files'),
@@ -135,6 +146,54 @@ class Button(SimpleButton):
             if "modules" in files:
                 with open(os.path.join(folder, "modules"), "r") as modules:
                     self._modules[button].update(line.strip() for line in modules)
+
+    def get_file_strings(self, settings, button_locales):
+        for file, data in self.get_js_files().items():
+            yield (os.path.join("chrome", "content", file + ".js"),
+                         data.replace("{{uuid}}", settings.get("extension_id")))
+
+        for file_name, data in self.get_files():
+            yield (os.path.join("chrome", "content", file_name),
+                         bytes_string(data))
+        options = self.get_options()
+        for file, data in options.items():
+            yield (os.path.join("chrome", "content", "%s.xul" % file), data)
+        locale_prefix = settings.get("locale_file_prefix")
+        for locale, file_name, data in self.locale_files(button_locales):
+            yield (os.path.join("chrome", "locale", locale,
+                                      locale_prefix + file_name),
+                         bytes_string(data))
+        for chrome_string in self.get_chrome_strings():
+            yield (chrome_string.file_name, bytes_string(chrome_string.data))
+        css, result_images, image_data = self.get_css_file()
+        yield (os.path.join("chrome", "skin", "button.css"), bytes_string(css))
+        self._result_images = result_images
+        for file_name, data in image_data.items():
+            yield (os.path.join("chrome", file_name), data)
+
+    def get_files_names(self, settings):
+        for image in self.option_icons:
+            yield (get_image(settings, "32", image),
+                      os.path.join("chrome", "skin", "option", image))
+        for size, image_list in self._result_images.items():
+            for image in set(image_list):
+                if size is not None:
+                    try:
+                        yield (get_image(settings, size, image), os.path.join("chrome", "skin", size, image))
+                    except (OSError, IOError):
+                        yield (get_image(settings, size, "picture-empty.png"), os.path.join("chrome", "skin", size, image))
+                        print("can not find file %s" % image)
+        if settings.get("icon"):
+            path = get_image(settings, "32", settings.get("icon"))
+            yield (path, "icon.png")
+            yield (path, os.path.join("chrome", "skin", "icon.png"))
+        else:
+            path = os.path.join(settings.get("project_root"), "files",
+                                "icon.png")
+            yield (path, "icon.png")
+            yield (path, os.path.join("chrome", "skin", "icon.png"))
+        for chrome_file in self.get_chrome_files():
+            yield (chrome_file.path, chrome_file.file_name)
 
     def get_description(self, button):
         folder = self._button_folders[button]

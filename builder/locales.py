@@ -212,3 +212,22 @@ class Locale(object):
             result[locale] = "\n".join(self._dtd_inter(
                 strings, button, line_format, locale, format_type))
         return result
+
+    def get_string_dict(self, strings, button=None,
+                        untranslated=True):
+        default = self.settings.get("default_locale")
+        result = {}
+        strings = list(strings)
+        for locale in self.locales:
+            for string in strings:
+                if self._strings[locale].get(string):
+                    break
+            else:
+                if not untranslated and locale != default:
+                    continue
+            result[locale] = {}
+            for string in strings:
+                value = self.get_string(string, locale, button)
+                if value is not None:
+                    result[locale][string] = value
+        return result

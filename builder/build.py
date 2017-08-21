@@ -4,7 +4,7 @@
 import os
 import zipfile
 from builder.locales import Locale
-from builder.button import get_image, RestartlessButton, OverlayButton, Button
+from builder.button import RestartlessButton, OverlayButton, WebExtensionButton, SimpleButton, ExtensionConfigError
 from builder.util import get_locale_folders, get_folders
 from builder.app_versions import get_app_versions
 
@@ -13,9 +13,6 @@ try:
 except NameError:
     basestring = str  # py3
     unicode = str
-
-class ExtensionConfigError(Exception):
-    pass
 
 def bytes_string(string):
     try:
@@ -49,10 +46,14 @@ def get_buttons(settings, cls=None):
         applications = settings.get("applications")
     button_list = set()
     buttons = settings.get("buttons", ())
+    if isinstance(buttons, basestring):
+        buttons = buttons.split(",")
     if buttons:
         button_list.update(buttons)
     menuitems = settings.get("menuitems", ())
-    if menuitems:
+    if isinstance(menuitems, basestring):
+        menuitems = menuitems.split(",")
+    if menuitems and not settings.get('webextension'):
         button_list.update(menuitems)
     button_folders, button_names = [], []
     for name in settings.get("projects"):
@@ -62,6 +63,8 @@ def get_buttons(settings, cls=None):
     if not cls:
         if settings.get('restartless'):
             cls = RestartlessButton
+        elif settings.get('webextension'):
+            cls = WebExtensionButton
         else:
             cls = OverlayButton
     menuitems = settings.get("menuitems")
@@ -93,10 +96,17 @@ def create_objects(settings, button_locales=None):
         raise ExtensionConfigError("The selected config would have no buttons.")
     return button_locales, buttons, locales
 
+def build_webextension(settings):
+    buttons = get_buttons(settings, SimpleButton)
+    for button in buttons.manifests():
+        config = dict(settings)
+        config['buttons'] = [button]
+        config['output_file'] = "{}-button-{}.xpi".format(button, settings.get('version'))
+        config['extension_id'] = "{}-single@codefisher.org".format(button)
+        build_extension(config)
 
 def build_extension(settings, output=None, project_root=None, button_locales=None):
     button_locales, buttons, locales = create_objects(settings, button_locales)
-
     xpi_file_name = os.path.join(
         settings.get("project_root"),
         settings.get("output_folder"),
@@ -106,13 +116,6 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
     else:
         xpi = zipfile.ZipFile(xpi_file_name, "w", zipfile.ZIP_DEFLATED)
     
-    for file, data in buttons.get_js_files().items():
-        xpi.writestr(os.path.join("chrome", "content", file + ".js"),
-                data.replace("{{uuid}}", settings.get("extension_id")))
-    
-    for file_name, data in buttons.get_files():
-        xpi.writestr(os.path.join("chrome", "content", file_name), bytes_string(data))
-
     if settings.get("fix_meta"):
         locale_name = locales[0] if len(locales) == 1 else None
         locale_str = buttons.locale_string(
@@ -130,43 +133,11 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
             settings["description"] = description.format(
                 settings["name"], u", ".join(labels))
 
-    options = buttons.get_options()
-    for file, data in options.items():
-        xpi.writestr(os.path.join("chrome", "content", "%s.xul" % file), data)
-    for image in buttons.option_icons:
-        xpi.write(get_image(settings, "32", image), os.path.join("chrome", "skin", "option", image))
+    for name, data in buttons.get_file_strings(settings, button_locales):
+        xpi.writestr(name, data)
 
-    locale_prefix = settings.get("locale_file_prefix")
-    for locale, file_name, data in buttons.locale_files(button_locales):
-        xpi.writestr(os.path.join("chrome", "locale", locale,
-                locale_prefix + file_name), bytes_string(data))
-
-    for chrome_string in buttons.get_chrome_strings():
-        xpi.writestr(chrome_string.file_name, bytes_string(chrome_string.data))
-    for chrome_file in buttons.get_chrome_files():
-        xpi.write(chrome_file.path, chrome_file.file_name)
-    
-    css, result_images, image_data = buttons.get_css_file()
-    xpi.writestr(os.path.join("chrome", "skin", "button.css"), bytes_string(css))
-    for size, image_list in result_images.items():
-        for image in set(image_list):
-            if size is not None:
-                try:
-                    xpi.write(get_image(settings, size, image), os.path.join("chrome", "skin", size, image))
-                except (OSError, IOError):
-                    xpi.write(get_image(settings, size, "picture-empty.png"), os.path.join("chrome", "skin", size, image))
-                    print("can not find file %s" % image)
-    for file_name, data in image_data.items():
-        xpi.writestr(os.path.join("chrome", file_name), data)
-
-    if settings.get("icon"):
-        path = get_image(settings, "32", settings.get("icon"))
-        xpi.write(path, "icon.png")
-        xpi.write(path, os.path.join("chrome", "skin", "icon.png"))
-    else:
-        path = os.path.join(settings.get("project_root"), "files", "icon.png")
-        xpi.write(path, "icon.png")
-        xpi.write(path, os.path.join("chrome", "skin", "icon.png"))
+    for name, file in buttons.get_files_names(settings):
+        xpi.write(name, file)
 
     xpi.close()
     if not output and settings.get("profile_folder"):

@@ -1,5 +1,6 @@
 import os
 import re
+import json
 from collections import defaultdict, namedtuple
 
 try:
@@ -41,6 +42,7 @@ class SimpleButton(object):
             self._applications = list(self._settings["applications_data"].keys())
         self._button_image = defaultdict(list)
         self._icons = {}
+        self._manifests = {}
         self._button_keys = {}
         self._button_applications = defaultdict(set)
 
@@ -130,7 +132,9 @@ class SimpleButton(object):
                     key_shortcut = list(keys.read().strip().partition(":"))
                     key_shortcut.pop(1)
                     self._button_keys[button] = key_shortcut
-                    
+            if "manifest.json" in files:
+                with open(os.path.join(folder, "manifest.json"), "r") as manifest:
+                    self._manifests[button] = json.load(manifest)
             if "strings" in files:
                 with open(os.path.join(folder, "strings"), "r") as strings:
                     for line in strings:
@@ -173,6 +177,9 @@ class SimpleButton(object):
 
     def applications(self):
         return self._applications
+
+    def manifests(self):
+        return self._manifests
 
     def buttons(self):
         return list(self._button_names)

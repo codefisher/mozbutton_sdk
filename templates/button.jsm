@@ -222,8 +222,9 @@ function unloadButtons(window) {
 			//}
 		}
 		var menuitem = document.getElementById(buttonId + '-menu-item');
-		if(menuitem) {
+		while(menuitem) {
 			menuitem.parentNode.removeChild(menuitem);
+			menuitem = document.getElementById(buttonId + '-menu-item');
 		}
 	}
 	var menu = document.getElementById('{{menu_id}}');
