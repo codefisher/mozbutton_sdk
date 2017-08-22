@@ -463,7 +463,7 @@ class Button(SimpleButton):
         return lines
     
     def get_icon_size(self):
-        small, large = self._settings.get("icon_size")
+        small, large = self._settings.get("icon_size")[0:2]
         icon_size = {
             "small": small,
             "large": large,

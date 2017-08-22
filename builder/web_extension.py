@@ -98,7 +98,9 @@ class WebExtensionButton(Button):
             path = get_image(settings, size, settings.get("icon"))
             yield (path, "icons/{}-{}".format(size, settings.get("icon")))
         for name, path in self.extra_files.items():
-            if not name.endswith('.xul') and not name.endswith('.html'):
+            if (not name.endswith('.xul') and not name.endswith('.html')
+                and (self._manifests.get('files') is None
+                     or name in self._manifests.get('files'))):
                 yield (path, os.path.join('files', name))
         for name, path in self.popup_files.items():
             if not name.endswith(".html"):

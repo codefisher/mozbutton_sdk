@@ -105,6 +105,15 @@ def build_webextension(settings):
         config['extension_id'] = "{}-single@codefisher.org".format(button)
         build_extension(config)
 
+def build_individual(settings):
+    buttons = get_buttons(settings, SimpleButton)
+    for button in buttons.buttons():
+        config = dict(settings)
+        config['buttons'] = [button]
+        config['output_file'] = "{}-button-{}.xpi".format(button, settings.get('version'))
+        config['extension_id'] = "{}-individual@codefisher.org".format(button)
+        build_extension(config)
+
 def build_extension(settings, output=None, project_root=None, button_locales=None):
     button_locales, buttons, locales = create_objects(settings, button_locales)
     xpi_file_name = os.path.join(

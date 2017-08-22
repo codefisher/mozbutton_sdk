@@ -5,6 +5,10 @@
     display:none;
 }
 
+.chromeclass-toolbar-additional[type="menu"] dropmarker {
+    display:none;
+}
+
 .mozbutton-panelview .toolbarbutton-icon {
     width:16px;
     height:16px;

@@ -32,6 +32,7 @@ class SimpleButton(object):
         self._buttons = buttons
         self._button_names = set(buttons)
         self._settings = settings
+
         try:
             Image
         except NameError:
@@ -53,6 +54,7 @@ class SimpleButton(object):
         self._strings = {}
         self._xul_files = {}
         self._button_folders = {}
+        self._legacy = {}
         self.button_windows = defaultdict(list)
         large_icon_size = settings.get("icon_size")[1]
         skip_without_icons = settings.get("skip_buttons_without_icons")
@@ -141,10 +143,21 @@ class SimpleButton(object):
                         name, _, value = line.strip().partition("=")
                         if name:
                             self._strings[name] = value
+            if "legacy" in files:
+                self._legacy[button] = True
             self._strings["extension.name"] = self._settings.get("name")
                             
     def __len__(self):
         return len(self._buttons)
+
+    def is_legacy(self, button):
+        return button in self._legacy
+
+    def amo_page(self, button):
+        return self._manifests.get(button, {}).get('amo_page')
+
+    def download_url(self, button):
+        return self._manifests.get(button, {}).get('download')
 
     def __contains__(self, item):
         return item in self._buttons

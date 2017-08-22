@@ -4,7 +4,7 @@ import textwrap
 import time
 import os
 
-from builder.build import build_extension, build_webextension, apply_max_version, ExtensionConfigError
+from builder.build import build_extension, build_webextension, build_individual, apply_max_version, ExtensionConfigError
 from builder.screenshot import create_screenshot
 from builder.util import apply_settings_files, get_svn_revision, get_git_revision, create_update_rdf
 
@@ -20,7 +20,7 @@ except NameError:
     raw_input = input
 
 def main():
-    opts, args = getopt.getopt(sys.argv[1:], "pvb:l:a:o:f:s:m:x:",
+    opts, args = getopt.getopt(sys.argv[1:], "pvb:l:a:o:f:s:m:x:i:",
         ["help", "profile", "screen-shot", "icons-per-row=", "screen-shot-font=", 
             "git-revision", "lookup-max-versions", "svn-revision", "update-rdf="])
     opts_table = dict(opts)
@@ -37,6 +37,7 @@ def main():
                         by a hyphen.
             -m    - merge all images into single large image, either y or n
             -p    - prompt for a list of config files to build extensions for
+            -i    - build as individual extensions
             
             -v --lookup-max-versions 
                   - do a web lookup of the latest application versions, and apply that to 
@@ -103,6 +104,8 @@ def main():
         prof.print_stats()
     if "-x" in opts_table:
         build_webextension(config)
+    if "-i" in opts_table:
+        build_individual(config)
     else:
         build_extension(config)
     print(time.time() - start)
