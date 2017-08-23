@@ -136,7 +136,10 @@ class SimpleButton(object):
                     self._button_keys[button] = key_shortcut
             if "manifest.json" in files:
                 with open(os.path.join(folder, "manifest.json"), "r") as manifest:
-                    self._manifests[button] = json.load(manifest)
+                    try:
+                        self._manifests[button] = json.load(manifest)
+                    except json.decoder.JSONDecodeError:
+                        raise ValueError("Can not parse manifest.json for {}.".format(button))
             if "strings" in files:
                 with open(os.path.join(folder, "strings"), "r") as strings:
                     for line in strings:

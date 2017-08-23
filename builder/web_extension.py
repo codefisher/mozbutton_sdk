@@ -16,8 +16,10 @@ class WebExtensionButton(Button):
         self.popup_files = {}
         self.option_files = {}
 
-        if len(buttons) > 1:
-            raise ExtensionConfigError("WebExtensions can only have a single button in them.")
+
+        if len(buttons) != 1:
+            raise ExtensionConfigError("WebExtensions can only have a single button in them. " + ", ".join(buttons))
+        self.the_button = buttons[0]
 
         if len(self._manifests) == 0:
             raise ExtensionConfigError(
@@ -43,6 +45,8 @@ class WebExtensionButton(Button):
             "name": settings.get('name'),
             "version": settings.get('version'),
             "description": settings.get('description'),
+            "homepage_url": settings.get('homepage'),
+            "author": settings.get('creator'),
             "icons": {},
             "browser_action": {
                 "browser_style": True,
@@ -58,11 +62,13 @@ class WebExtensionButton(Button):
         }
         if settings.get('homepage'):
             manifest["homepage_url"] = settings.get('homepage')
-        for button, data in self._manifests.items():
-            if 'default_title' in data:
-                manifest['browser_action']["default_title"] = "__MSG_{}__".format(message_name(data.get('default_title')))
-            if 'permissions' in data:
-                manifest['permissions'] = data['permissions']
+        data = self._manifests.get(self.the_button)
+        if 'default_title' in data:
+            manifest['browser_action']["default_title"] = "__MSG_{}__".format(message_name(data.get('default_title')))
+        if 'content_scripts' in data:
+            manifest['content_scripts'] = data.get('content_scripts')
+        if 'permissions' in data:
+            manifest['permissions'] = data['permissions']
         for size in settings.get('icon_size'):
             name = "icons/{}-{}".format(size, settings.get("icon"))
             manifest['icons'][size] = name
@@ -98,9 +104,10 @@ class WebExtensionButton(Button):
             path = get_image(settings, size, settings.get("icon"))
             yield (path, "icons/{}-{}".format(size, settings.get("icon")))
         for name, path in self.extra_files.items():
+            manifiest = self._manifests.get(self.the_button)
             if (not name.endswith('.xul') and not name.endswith('.html')
-                and (self._manifests.get('files') is None
-                     or name in self._manifests.get('files'))):
+                and (manifiest.get('files') is None
+                     or name in manifiest.get('files'))):
                 yield (path, os.path.join('files', name))
         for name, path in self.popup_files.items():
             if not name.endswith(".html"):
@@ -121,11 +128,11 @@ class WebExtensionButton(Button):
 
     def get_locale_strings(self):
         strings = set()
-        for button, data in self._manifests.items():
-            if 'default_title' in data:
-                strings.add(data.get('default_title'))
-            if 'strings' in data:
-                strings.update(data.get('strings'))
+        data = self._manifests.get(self.the_button)
+        if 'default_title' in data:
+            strings.add(data.get('default_title'))
+        if 'strings' in data:
+            strings.update(data.get('strings'))
         for file_group in (self.popup_files, self.option_files, self.extra_files):
             for name, path in file_group.items():
                 if name.endswith('.html'):

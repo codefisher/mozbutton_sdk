@@ -129,7 +129,15 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
         locale_name = locales[0] if len(locales) == 1 else None
         locale_str = buttons.locale_string(
             button_locale=button_locales, locale_name=locale_name)
-        labels = sorted((locale_str("label", button)
+        def label_get(button):
+            title_string = buttons.manifests().get(button, {}).get('name')
+            if title_string:
+                name = button_locales.get_dtd_value(locale_name, title_string, button)
+                if name:
+                    return name
+                return title_string
+            return locale_str("label", button)
+        labels = sorted((label_get(button)
                          for button in buttons.buttons()), key=unicode.lower)
         if len(buttons) == 1:
             button = buttons.buttons()[0]

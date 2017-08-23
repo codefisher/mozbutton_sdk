@@ -104,7 +104,7 @@ def main():
         prof.print_stats()
     if "-x" in opts_table:
         build_webextension(config)
-    if "-i" in opts_table:
+    elif "-i" in opts_table:
         build_individual(config)
     else:
         build_extension(config)
