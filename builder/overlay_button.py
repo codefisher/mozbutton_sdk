@@ -169,7 +169,7 @@ class OverlayButton(Button):
             return tool_bars, bottom_bars, toolbar_ids
         count = 0
         max_count = self._settings.get("buttons_per_toolbar")
-        buttons = set(values.keys())
+        buttons = list(values.keys())
         for box_setting, include_setting, toolbars in [("file_to_toolbar_box", "include_toolbars", tool_bars),
                                                        ("file_to_bottom_box", "include_satusbars", bottom_bars)]:
             toolbar_node, toolbar_box = self._settings.get(box_setting).get(file_name, ('', ''))
