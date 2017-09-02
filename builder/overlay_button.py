@@ -7,6 +7,7 @@ except ImportError:
 import operator
 import itertools
 import json
+import codecs
 
 from builder.ext_button import Button, ChromeString
 
