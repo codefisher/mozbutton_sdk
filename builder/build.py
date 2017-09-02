@@ -98,11 +98,15 @@ def create_objects(settings, button_locales=None):
 
 def build_webextension(settings):
     buttons = get_buttons(settings, SimpleButton)
-    for button in buttons.manifests():
+    manifests = buttons.manifests()
+    for button in manifests:
         config = dict(settings)
         config['buttons'] = [button]
         config['output_file'] = "{}-button-{}.xpi".format(button, settings.get('version'))
-        config['extension_id'] = "{}-single@codefisher.org".format(button)
+        if 'extension_id' in manifests.get(button):
+            config['extension_id'] = manifests.get(button).get('extension_id')
+        else:
+            config['extension_id'] = "{}-single@codefisher.org".format(button)
         build_extension(config)
 
 def build_individual(settings):

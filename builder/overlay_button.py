@@ -102,14 +102,14 @@ class OverlayButton(Button):
             menu.append(menupopup)
             overlay_menupopup = ET.Element("menupopup", {"id": menu_name})
             overlay_menupopup.append(menu)
-            statements.append(ET.tostring(overlay_menupopup, pretty_print=True).replace("&amp;", "&"))
+            statements.append(ET.tostring(overlay_menupopup, pretty_print=True, encoding='unicode').replace("&amp;", "&"))
         if in_menu:
             for menu_name, items in itertools.groupby(sorted(in_menu), key=operator.itemgetter(0)):
                 menupopup = ET.Element("menupopup", {"id": menu_name})
                 for _, (item, menu_name, insert_after) in items:
                     item.attrib['insertafter'] = insert_after
                     menupopup.append(item)
-                statements.append(ET.tostring(menupopup, pretty_print=True).replace("&amp;", "&"))
+                statements.append(ET.tostring(menupopup, pretty_print=True, encoding='unicode').replace("&amp;", "&"))
         return '\n\t'.join(statements)
 
     def get_xul_files(self):
@@ -118,7 +118,7 @@ class OverlayButton(Button):
         Precondition: get_js_files() has been called
         """
         button_hash, toolbar_template = self._get_toolbar_info()
-        with open(os.path.join(self._settings.get("button_sdk_root"), 'templates', 'button.xul')) as template_file:
+        with codecs.open(os.path.join(self._settings.get("button_sdk_root"), 'templates', 'button.xul'), encoding='utf-8') as template_file:
             template = template_file.read()
         result = {}
         for file_name, values in self._button_xul.items():
