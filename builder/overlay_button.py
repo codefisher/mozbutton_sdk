@@ -180,7 +180,7 @@ class OverlayButton(Button):
                 for i in range(number):
                     if self._settings.get("put_button_on_toolbar"):
                         defaultset = 'defaultset="%s"' % ",".join(buttons[i * max_count:(i + 1) * max_count])
-                    button_hash.update(str(i))
+                    button_hash.update(str(i).encode('utf-8'))
                     hash_code = button_hash.hexdigest()[:6]
                     label_number = "" if (number + count) == 1 else " %s" % (i + count + 1)
                     toolbar_ids.append("tb-toolbar-%s" % hash_code)
