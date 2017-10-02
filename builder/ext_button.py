@@ -196,6 +196,8 @@ class Button(SimpleButton):
             yield (chrome_file.path, chrome_file.file_name)
 
     def get_description(self, button):
+        if button in self._manifests and "description" in self._manifests.get(button):
+            return self._manifests.get(button).get("description")
         folder = self._button_folders[button]
         with open(os.path.join(folder, "description"), "r") as description:
             return description.read()

@@ -25,6 +25,14 @@ class WebExtensionButton(Button):
             raise ExtensionConfigError(
                 "Buttons for WebExtensions must have a manifest.json file.")
 
+        for button, data in self._manifests.items():
+            if "images" in data:
+                self._icons[button] = data.get('images')
+            if "strings" in data:
+                for name, value in data.get("strings"):
+                    self._strings[name] = value
+
+
         for folder, button, files in self._info:
             if 'background.js' in files:
                 with open(os.path.join(folder, "background.js"), "r") as background:
@@ -44,7 +52,7 @@ class WebExtensionButton(Button):
             "manifest_version": 2,
             "name": settings.get('name'),
             "version": settings.get('version'),
-            "description": settings.get('description'),
+            "description": settings.get('description').strip(),
             "homepage_url": settings.get('homepage'),
             "author": settings.get('creator'),
             "icons": {},
@@ -131,8 +139,11 @@ class WebExtensionButton(Button):
         data = self._manifests.get(self.the_button)
         if 'default_title' in data:
             strings.add(data.get('default_title'))
+        if 'used_strings' in data:
+            strings.update(data.get('used_strings'))
         if 'strings' in data:
-            strings.update(data.get('strings'))
+            for name, _ in data.get("strings"):
+                strings.add(name)
         for file_group in (self.popup_files, self.option_files, self.extra_files):
             for name, path in file_group.items():
                 if name.endswith('.html'):

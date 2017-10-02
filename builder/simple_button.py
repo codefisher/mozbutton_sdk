@@ -113,7 +113,8 @@ class SimpleButton(object):
             elif button_wanted:
                 raise ValueError("%s does not contain image listing." % folder)
 
-            if not button_wanted:
+            if not button_wanted and not settings.get("webextension"):
+                print("Removing {}".format(button))
                 self._button_names.remove(button)
                 continue
             else:

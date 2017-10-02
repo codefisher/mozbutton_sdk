@@ -139,7 +139,7 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
                 name = button_locales.get_dtd_value(locale_name, title_string, button)
                 if name:
                     return name
-                return title_string
+                return buttons.get_string(title_string, locale_name)
             return locale_str("label", button)
         labels = sorted((label_get(button)
                          for button in buttons.buttons()), key=unicode.lower)
