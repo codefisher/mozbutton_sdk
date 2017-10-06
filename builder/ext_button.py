@@ -374,8 +374,8 @@ class Button(SimpleButton):
             try:
                 with codecs.open(file_name, 'r', encoding='utf-8') as xul:
                     strings.extend(locale_match.findall(xul.read()))
-            except:
-                raise ValueError("Can not read file {}".format(file_name))
+            except UnicodeDecodeError:
+                pass # likely we hit a binary file, nothing to worry about
         strings = list(set(strings))
         strings.sort()
         return strings
