@@ -429,9 +429,15 @@ class Button(SimpleButton):
 
     def get_chrome_strings(self):
         for name, path in self.extra_files.items():
-            with codecs.open(path, encoding='utf-8') as fp:
-                yield ChromeString(file_name=os.path.join("chrome", "content", "files", name),
-                         data=self.string_subs(fp.read()))
+            try:
+                with codecs.open(path, encoding='utf-8') as fp:
+                    yield ChromeString(file_name=os.path.join("chrome", "content", "files", name),
+                             data=self.string_subs(fp.read()))
+            except UnicodeDecodeError:
+                # must be binary file
+                with open(path, 'rb') as fp:
+                    yield ChromeString(file_name=os.path.join("chrome", "content", "files", name),
+                             data=fp.read())
         yield ChromeString(file_name="install.rdf", data=self.create_install())
         yield ChromeString(file_name="chrome.manifest", data='\n'.join(self.manifest_lines()))
 
