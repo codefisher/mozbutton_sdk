@@ -39,6 +39,8 @@ JavascriptInfo = namedtuple('JavascriptInfo', ['interfaces', 'functions', 'extra
 string_match = re.compile(r"StringFromName\(\"([a-zA-Z0-9.-]*?)\"")
 
 def bytes_string(string):
+    if type(string) == bytes:
+        return string
     try:
         if type(string) == unicode:
             return str(string.encode("utf-8"))
