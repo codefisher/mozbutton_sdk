@@ -103,6 +103,7 @@ def build_webextension(settings):
         config = dict(settings)
         config['buttons'] = [button]
         config['output_file'] = "{}-button-{}.xpi".format(button, settings.get('version'))
+        config['output_locales_file'] = "{}-button.zip".format(button)
         if 'extension_id' in manifests.get(button):
             config['extension_id'] = manifests.get(button).get('extension_id')
         else:
@@ -115,6 +116,7 @@ def build_individual(settings):
         config = dict(settings)
         config['buttons'] = [button]
         config['output_file'] = "{}-button-{}.xpi".format(button, settings.get('version'))
+        config['output_locales_file'] = "{}-button.zip".format(button)
         config['extension_id'] = "{}-individual@codefisher.org".format(button)
         build_extension(config)
 
@@ -153,6 +155,16 @@ def build_extension(settings, output=None, project_root=None, button_locales=Non
             description = u"A customized version of {} including the buttons: {}"
             settings["description"] = description.format(
                 settings["name"], u", ".join(labels))
+
+    if not output:
+        zip_file_name = os.path.join(
+            settings.get("project_root"),
+            settings.get("output_folder"),
+            settings.get("output_locales_file", "locales.zip") % settings)
+        zip = zipfile.ZipFile(zip_file_name, "w", zipfile.ZIP_DEFLATED)
+        for locale, name, data in buttons.locale_files(button_locales):
+            zip.writestr("{}/{}".format(locale, name), data)
+        zip.close()
 
     for name, data in buttons.get_file_strings(settings, button_locales):
         xpi.writestr(name, data)

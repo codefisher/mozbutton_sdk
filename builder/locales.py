@@ -3,12 +3,42 @@
 import os
 import re
 import copy
+import json
 from collections import defaultdict
 import codecs
 from lxml import etree
 
 ampersand_fix = re.compile(r'&(?![A-Za-z]+[0-9]*;|#[0-9]+;|#x[0-9a-fA-F]+;|[A-Za-z\.]+;)')
 
+class WebExtensionLocal(object):
+    def __init__(self, folder, default_name):
+        self._locales = {}
+        self._default = default_name
+        with open(os.path.join(folder, "messages.json"), "r") as fp:
+            self._locales[default_name] = json.load(fp)
+        if os.path.exists(os.path.join(folder, "_locales")):
+            for locale in os.listdir(os.path.join(folder, "_locales")):
+                locale_name = locale.replace("_", "-")
+                if locale_name != default_name:
+                    with open(os.path.join(folder, "_locales", locale, "messages.json"), "r") as fp:
+                        self._locales[locale] = json.load(fp)
+
+    def get_string(self, name, locale):
+        if not locale:
+            locale = self._default
+        locale = locale.replace("-", "_")
+        result =  self._locales.get(locale, {}).get(name)
+        if result is None:
+            result = self._locales.get(self._default, {}).get(name)
+        return result
+
+    def get_locales(self):
+        return list(self._locales.keys())
+
+def message_name(name):
+    def repl(match):
+        return match.group(1).upper()
+    return re.sub(r'[^a-zA-Z]([a-zA-Z])', repl, name)
 
 class Locale(object):
     """Parses the localisation files of the extension and queries it for data"""

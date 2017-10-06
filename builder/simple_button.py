@@ -2,6 +2,7 @@ import os
 import re
 import json
 from collections import defaultdict, namedtuple
+from builder.locales import WebExtensionLocal, message_name
 
 try:
     unicode
@@ -32,6 +33,7 @@ class SimpleButton(object):
         self._buttons = buttons
         self._button_names = set(buttons)
         self._settings = settings
+        self.webx_locale = {}
 
         try:
             Image
@@ -58,6 +60,7 @@ class SimpleButton(object):
         self.button_windows = defaultdict(list)
         large_icon_size = settings.get("icon_size")[1]
         skip_without_icons = settings.get("skip_buttons_without_icons")
+        print("skip_buttons_without_icons {}".format(skip_without_icons))
 
         for folder, button in zip(self._folders, self._buttons):
             if self._settings.get("exclude_buttons") and button in self._settings.get("exclude_buttons"):
@@ -93,7 +96,17 @@ class SimpleButton(object):
             for file_name in self._window_files:
                 xul_file = file_name + ".xul"
                 button_wanted = add_xul(file_name, xul_file, button_wanted)
+            if "manifest.json" in files:
+                button_wanted = True
+                self._button_applications[button].add("browser")
+                with open(os.path.join(folder, "manifest.json"), "r") as manifest:
+                    try:
+                        self._manifests[button] = json.load(manifest)
+                    except json.decoder.JSONDecodeError:
+                        raise ValueError("Can not parse manifest.json for {}.".format(button))
 
+            if "messages.json" in files:
+                self.webx_locale[button] = WebExtensionLocal(folder, settings.get('default_locale'))
             if "image" in files and button_wanted:
                 with open(os.path.join(folder, "image"), "r") as images:
                     for line in images:
@@ -111,7 +124,10 @@ class SimpleButton(object):
                         button_wanted = False
                             
             elif button_wanted:
-                raise ValueError("%s does not contain image listing." % folder)
+                if button in self._manifests and "images" in self._manifests[button]:
+                    self._icons[button] = self._manifests[button]["images"]
+                else:
+                    raise ValueError("%s does not contain image listing." % folder)
 
             if not button_wanted and not settings.get("webextension"):
                 print("Removing {}".format(button))
@@ -135,12 +151,6 @@ class SimpleButton(object):
                     key_shortcut = list(keys.read().strip().partition(":"))
                     key_shortcut.pop(1)
                     self._button_keys[button] = key_shortcut
-            if "manifest.json" in files:
-                with open(os.path.join(folder, "manifest.json"), "r") as manifest:
-                    try:
-                        self._manifests[button] = json.load(manifest)
-                    except json.decoder.JSONDecodeError:
-                        raise ValueError("Can not parse manifest.json for {}.".format(button))
             if "strings" in files:
                 with open(os.path.join(folder, "strings"), "r") as strings:
                     for line in strings:
@@ -210,6 +220,10 @@ class SimpleButton(object):
         return ""
 
     def get_string(self, name, locale=None):
+        for item in self.webx_locale.values():
+            result = item.get_string(message_name(name), locale)
+            if result:
+                return result.get("message")
         return self._strings.get(name) or self.get_key(name, locale)
 
     def get_icons(self, button):
@@ -219,7 +233,7 @@ class SimpleButton(object):
         def locale_str(str_type, button_id):
             default_locale = self._settings.get('default_locale', 'en-US')
             value = button_locale.get_dtd_value(locale_name, "%s.%s" % (button_id, str_type), self)
-            if value is None:
+            if value is None and len(self._xul_files[button_id]):
                 if str_type == "tooltip":
                     regexp = r'tooltiptext="&(.*\.tooltip);"'
                 else:
