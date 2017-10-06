@@ -96,6 +96,7 @@ config = {
 
     "output_folder": "extensions",
     "output_file": "%(chrome_name)s-%(version)s.xpi",
+    "output_locales_file": "%(chrome_name)s.zip",
 
     # parts of the extension are copied here, if set
     "profile_folder": None,
