@@ -371,8 +371,11 @@ class Button(SimpleButton):
         locale_match = re.compile("&([a-zA-Z0-9.-]*);")
         strings = []
         for file_name in self.extra_files.values():
-            with codecs.open(file_name, 'r', encoding='utf-8') as xul:
-                strings.extend(locale_match.findall(xul.read()))
+            try:
+                with codecs.open(file_name, 'r', encoding='utf-8') as xul:
+                    strings.extend(locale_match.findall(xul.read()))
+            except:
+                raise ValueError("Can not read file {}".format(file_name))
         strings = list(set(strings))
         strings.sort()
         return strings
