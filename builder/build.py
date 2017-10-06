@@ -102,7 +102,7 @@ def build_webextension(settings):
     for button in manifests:
         config = dict(settings)
         config['buttons'] = [button]
-        config['output_file'] = "{}-button-{}.xpi".format(button, settings.get('version'))
+        config['output_file'] = "{}-button.xpi".format(button)
         config['output_locales_file'] = "{}-button.zip".format(button)
         if 'extension_id' in manifests.get(button):
             config['extension_id'] = manifests.get(button).get('extension_id')

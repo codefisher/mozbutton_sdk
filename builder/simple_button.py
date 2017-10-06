@@ -106,7 +106,10 @@ class SimpleButton(object):
 
             if "messages.json" in files:
                 self.webx_locales[button] = WebExtensionLocal(folder, settings.get('default_locale'))
-            if "image" in files and button_wanted:
+
+            if button in self._manifests and "images" in self._manifests[button]:
+                self._icons[button] = self._manifests[button]["images"]
+            elif "image" in files and button_wanted:
                 with open(os.path.join(folder, "image"), "r") as images:
                     for line in images:
                         name, _, modifier = line.partition(" ")
@@ -123,10 +126,7 @@ class SimpleButton(object):
                         button_wanted = False
                             
             elif button_wanted:
-                if button in self._manifests and "images" in self._manifests[button]:
-                    self._icons[button] = self._manifests[button]["images"]
-                else:
-                    raise ValueError("%s does not contain image listing." % folder)
+                raise ValueError("%s does not contain image listing." % folder)
 
             if not button_wanted and not settings.get("webextension"):
                 print("Removing {}".format(button))
