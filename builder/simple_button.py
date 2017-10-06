@@ -33,7 +33,7 @@ class SimpleButton(object):
         self._buttons = buttons
         self._button_names = set(buttons)
         self._settings = settings
-        self.webx_locale = {}
+        self.webx_locales = {}
 
         try:
             Image
@@ -60,7 +60,6 @@ class SimpleButton(object):
         self.button_windows = defaultdict(list)
         large_icon_size = settings.get("icon_size")[1]
         skip_without_icons = settings.get("skip_buttons_without_icons")
-        print("skip_buttons_without_icons {}".format(skip_without_icons))
 
         for folder, button in zip(self._folders, self._buttons):
             if self._settings.get("exclude_buttons") and button in self._settings.get("exclude_buttons"):
@@ -106,7 +105,7 @@ class SimpleButton(object):
                         raise ValueError("Can not parse manifest.json for {}.".format(button))
 
             if "messages.json" in files:
-                self.webx_locale[button] = WebExtensionLocal(folder, settings.get('default_locale'))
+                self.webx_locales[button] = WebExtensionLocal(folder, settings.get('default_locale'))
             if "image" in files and button_wanted:
                 with open(os.path.join(folder, "image"), "r") as images:
                     for line in images:
@@ -220,7 +219,7 @@ class SimpleButton(object):
         return ""
 
     def get_string(self, name, locale=None):
-        for item in self.webx_locale.values():
+        for item in self.webx_locales.values():
             result = item.get_string(message_name(name), locale)
             if result:
                 return result.get("message")
